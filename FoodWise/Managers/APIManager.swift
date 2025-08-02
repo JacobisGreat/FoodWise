@@ -11,11 +11,12 @@ import UIKit
 class APIManager: ObservableObject {
     private let geminiAPIKey = "AIzaSyDh4PSJ5QTZVqAcA9PVhSRs1uylVZYyZHU"
     private let openFoodFactsBaseURL = "https://world.openfoodfacts.org/api/v0/product"
-    private let geminiBaseURL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
+    private let geminiBaseURL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent"
     
     func fetchProductData(barcode: String) async throws -> OpenFoodFactsProduct? {
         print("🔍 Fetching product data for barcode: \(barcode)")
-        let url = URL(string: "\(openFoodFactsBaseURL)/\(barcode).json")!
+        // Request comprehensive product data including ingredients
+        let url = URL(string: "\(openFoodFactsBaseURL)/\(barcode).json?fields=product_name,brands,nutriments,image_url,ingredients,nutrition_grades")!
         
         print("📡 Open Food Facts URL: \(url)")
         
@@ -34,6 +35,13 @@ class APIManager: ObservableObject {
         if let product = decodedResponse.product {
             print("🥫 Product Found: \(product.productName ?? "Unknown")")
             print("🏷️ Brands: \(product.brands ?? "Unknown")")
+            if let ingredients = product.ingredients {
+                print("🧪 Ingredients Count: \(ingredients.count)")
+                let ingredientTexts = ingredients.compactMap { $0.text }.prefix(3).joined(separator: ", ")
+                print("🧪 First 3 Ingredients: \(ingredientTexts)")
+            } else {
+                print("⚠️ No ingredients data found")
+            }
             if let nutriments = product.nutriments {
                 print("🧮 Nutrition - Energy: \(nutriments.energy ?? 0) kcal, Fat: \(nutriments.fat ?? 0)g, Carbs: \(nutriments.carbohydrates ?? 0)g")
             }
@@ -59,104 +67,143 @@ class APIManager: ObservableObject {
     }
     
     private func createAnalysisPrompt(productData: OpenFoodFactsProduct?, userProfile: User) -> String {
-        // Build health conditions list
-        var allConditions: [String] = []
-        if !userProfile.medicalConditions.isEmpty {
-            allConditions.append(contentsOf: userProfile.medicalConditions)
-        }
-        if !userProfile.customHealthConditions.isEmpty {
-            allConditions.append(contentsOf: userProfile.customHealthConditions)
-        }
-        let conditionsText = allConditions.isEmpty ? "no specific medical conditions" : allConditions.joined(separator: ", ")
+        let conditionsText = userProfile.medicalConditions.isEmpty ? "no specific conditions" : userProfile.medicalConditions.joined(separator: ", ")
         
-        // Build health goals and concerns
-        let healthGoalsText = userProfile.healthGoals.isEmpty ? "" : "\n- Health Goals: \(userProfile.healthGoals)"
-        let healthConcernsText = userProfile.additionalHealthConcerns.isEmpty ? "" : "\n- Additional Health Concerns: \(userProfile.additionalHealthConcerns)"
-        
-        let productInfo = """
-        Product Name: \(productData?.productName ?? "Unknown")
-        Brands: \(productData?.brands ?? "Unknown")
-        Nutrition per 100g:
-        - Energy: \(productData?.nutriments?.energy ?? 0) kcal
-        - Fat: \(productData?.nutriments?.fat ?? 0)g
-        - Saturated Fat: \(productData?.nutriments?.saturatedFat ?? 0)g
-        - Carbohydrates: \(productData?.nutriments?.carbohydrates ?? 0)g
-        - Sugars: \(productData?.nutriments?.sugars ?? 0)g
-        - Fiber: \(productData?.nutriments?.fiber ?? 0)g
-        - Proteins: \(productData?.nutriments?.proteins ?? 0)g
-        - Salt: \(productData?.nutriments?.salt ?? 0)g
-        """
+        let productInfo: String
+        if let productData = productData {
+            let ingredientsList = productData.ingredients?.compactMap { $0.text }.joined(separator: ", ") ?? "Not available"
+            
+            productInfo = """
+            Product Name: \(productData.productName ?? "Unknown")
+            Brands: \(productData.brands ?? "Unknown")
+            
+            INGREDIENTS: \(ingredientsList)
+            
+            Nutrition per 100g:
+            - Energy: \(productData.nutriments?.energy ?? 0) kcal
+            - Fat: \(productData.nutriments?.fat ?? 0)g
+            - Saturated Fat: \(productData.nutriments?.saturatedFat ?? 0)g
+            - Carbohydrates: \(productData.nutriments?.carbohydrates ?? 0)g
+            - Sugars: \(productData.nutriments?.sugars ?? 0)g
+            - Fiber: \(productData.nutriments?.fiber ?? 0)g
+            - Proteins: \(productData.nutriments?.proteins ?? 0)g
+            - Salt: \(productData.nutriments?.salt ?? 0)g
+            - Sodium: \(productData.nutriments?.sodium ?? 0)mg
+            """
+        } else {
+            productInfo = "Product information not available from barcode database."
+        }
         
         return """
-        You are a personalized nutrition expert speaking directly to a user about their food choices.
+        You are a nutrition expert analyzing food products for a health-conscious consumer with specific medical conditions.
         
-        User Profile:
-        - Age: \(userProfile.age) years old
+        Your User Profile:
+        - Age: \(userProfile.age)
         - Height: \(userProfile.height)cm
         - Weight: \(userProfile.weight)kg
-        - Medical Conditions: \(conditionsText)\(healthGoalsText)\(healthConcernsText)
+        - Medical Conditions: \(conditionsText)
         
         Product Information:
         \(productInfo)
         
-        Analyze this product specifically for this user and provide personalized feedback. Speak directly to them using "you" and "your". Consider their health goals, medical conditions, and concerns when making recommendations.
+        IMPORTANT ANALYSIS REQUIREMENTS:
+        1. Consider BOTH nutrition facts AND ingredients list for health assessment
+        2. Pay special attention to processed ingredients, additives, preservatives
+        3. Consider ingredient quality, not just nutritional numbers
+        4. Look for concerning ingredients like: high fructose corn syrup, trans fats, artificial colors, excessive sodium, etc.
+        5. Factor in your specific medical conditions
         
-        Provide:
-        1. A NutriScore (A, B, C, D, or E) - A being the healthiest
-        2. 3-5 bullet points explaining how this product fits with their health goals and conditions (speak directly to them)
-        3. 2-3 citations from reputable health sources (WHO, Mayo Clinic, Harvard Health, etc.)
+        Please analyze this product comprehensively and provide:
+        1. A NutriScore (A, B, C, D, or E) - A being the healthiest, considering BOTH nutrition AND ingredients
+        2. 3-5 bullet points explaining why this product is suitable or unsuitable for you (mention specific ingredients/nutrients that concern or benefit you)
+        3. 2-3 citations from reputable health sources
+        4. A list of ingredients with simple English explanations of what each ingredient is and its purpose/effect
         
         Return your response in this exact JSON format:
         {
-            "nutriScore": "A",
-            "analysisPoints": ["Point 1", "Point 2", "Point 3"],
-            "citations": ["Citation 1", "Citation 2"],
-            "productName": "Product Name",
-            "confidence": 0.95
+            "nutriScore": "C",
+            "analysisPoints": [
+                "Point about specific ingredients or nutrients relevant to you",
+                "Point about how this suits your medical conditions", 
+                "Point about processing level and what it means for your health",
+                "Point about portion recommendations for you"
+            ],
+            "citations": [
+                "American Heart Association guidelines on sodium intake",
+                "WHO recommendations on processed foods"
+            ],
+            "productName": "\(productData?.productName ?? "Unknown Product")",
+            "confidence": 0.85,
+            "ingredients": [
+                "Water - The base liquid for hydration",
+                "Sugar - Provides quick energy but can cause blood sugar spikes",
+                "Citric Acid - Natural preservative and flavor enhancer"
+            ]
         }
         """
     }
     
     private func createImageAnalysisPrompt(userProfile: User) -> String {
-        // Build health conditions list
-        var allConditions: [String] = []
-        if !userProfile.medicalConditions.isEmpty {
-            allConditions.append(contentsOf: userProfile.medicalConditions)
-        }
-        if !userProfile.customHealthConditions.isEmpty {
-            allConditions.append(contentsOf: userProfile.customHealthConditions)
-        }
-        let conditionsText = allConditions.isEmpty ? "no specific medical conditions" : allConditions.joined(separator: ", ")
-        
-        // Build health goals and concerns
-        let healthGoalsText = userProfile.healthGoals.isEmpty ? "" : "\n- Health Goals: \(userProfile.healthGoals)"
-        let healthConcernsText = userProfile.additionalHealthConcerns.isEmpty ? "" : "\n- Additional Health Concerns: \(userProfile.additionalHealthConcerns)"
+        let conditionsText = userProfile.medicalConditions.isEmpty ? "no specific conditions" : userProfile.medicalConditions.joined(separator: ", ")
         
         return """
-        You are a personalized nutrition expert with OCR capabilities. Analyze the nutrition label in this image and provide personalized feedback.
+        You are a nutrition expert analyzing food product images for a health-conscious consumer with specific medical conditions.
         
-        User Profile:
-        - Age: \(userProfile.age) years old
+        Your User Profile:
+        - Age: \(userProfile.age)
         - Height: \(userProfile.height)cm
         - Weight: \(userProfile.weight)kg
-        - Medical Conditions: \(conditionsText)\(healthGoalsText)\(healthConcernsText)
+        - Medical Conditions: \(conditionsText)
         
-        Please:
-        1. Extract the product name and nutrition information from the image
-        2. Provide a NutriScore (A, B, C, D, or E) based on nutritional quality
-        3. Give 3-5 bullet points explaining how this product aligns with their health goals and conditions (speak directly to them using "you" and "your")
-        4. Include 2-3 citations from reputable health sources (WHO, Mayo Clinic, Harvard Health, etc.)
+        CRITICAL INSTRUCTIONS FOR IMAGE ANALYSIS:
+        1. CAREFULLY READ ALL TEXT in this image including:
+           - Nutrition Facts panel (calories, fats, sugars, sodium, etc.)
+           - INGREDIENTS LIST (this is crucial - read every ingredient!)
+           - Product name and brand
+           - Any allergen warnings
+           - Any health claims or certifications
         
-        Consider their personal health goals and conditions when making recommendations. Speak directly to them, not about them.
+        2. COMPREHENSIVE HEALTH ASSESSMENT:
+           - Base your NutriScore on BOTH nutritional content AND ingredient quality
+           - Look for concerning ingredients: artificial additives, preservatives, high fructose corn syrup, trans fats, excessive sodium
+           - Consider processing level (ultra-processed vs minimally processed)
+           - Factor in your specific medical conditions
+        
+        3. If you cannot clearly read both nutrition facts AND ingredients, ask for a clearer image
+        
+        Please analyze this product image comprehensively and provide:
+        1. A NutriScore (A, B, C, D, or E) - A being the healthiest, considering BOTH nutrition AND ingredients quality
+        2. 3-5 bullet points explaining:
+           - Specific nutritional concerns or benefits for you
+           - Ingredient quality assessment (mention concerning additives/preservatives that affect you)
+           - How this suits your medical conditions
+           - Processing level and health recommendations for you
+        3. 2-3 citations from reputable health sources
+        4. A list of ingredients with simple English explanations of what each ingredient is and its purpose/effect (extract from the product image)
         
         Return your response in this exact JSON format:
         {
-            "nutriScore": "A",
-            "analysisPoints": ["Point 1", "Point 2", "Point 3"],
-            "citations": ["Citation 1", "Citation 2"],
-            "productName": "Product Name",
-            "confidence": 0.95
+            "nutriScore": "C",
+            "analysisPoints": [
+                "Nutritional analysis based on facts panel and how it affects you",
+                "Ingredient quality assessment with specific concerns for your health",
+                "How this product suits your medical conditions", 
+                "Processing level and health recommendations tailored to you"
+            ],
+            "citations": [
+                "Relevant health authority guideline",
+                "Scientific study or health organization recommendation"
+            ],
+            "productName": "Product name from image",
+            "confidence": 0.85,
+            "ingredients": [
+                "Water - The base liquid for hydration",
+                "Sugar - Provides quick energy but can cause blood sugar spikes",
+                "Citric Acid - Natural preservative and flavor enhancer"
+            ]
         }
+        
+        IMPORTANT: Your analysis should be consistent - the same product should get the same NutriScore whether scanned by barcode or image!
         """
     }
     

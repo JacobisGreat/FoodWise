@@ -14,29 +14,33 @@ struct HistoryView: View {
     
     var body: some View {
         NavigationView {
-            VStack {
+            ZStack {
+                // Background
+                Color.backgroundWhite
+                    .ignoresSafeArea()
+                
+                VStack {
                 if scanHistoryManager.isLoading {
                     VStack(spacing: 16) {
                         ProgressView()
                             .scaleEffect(1.5)
                         Text("Loading history...")
                             .font(.subheadline)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(.textSecondary)
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else if scanHistoryManager.scanHistory.isEmpty {
                     VStack(spacing: 16) {
-                        Image(systemName: "clock")
-                            .font(.system(size: 60))
-                            .foregroundColor(.gray)
+                        CustomIcons.HistoryIcon(size: 60, isActive: false)
                         
                         Text("No Scan History")
-                            .font(.title2)
-                            .fontWeight(.semibold)
+                            .font(.welcomeTitle)
+                            .fontWeight(.medium)
+                            .foregroundColor(.textPrimary)
                         
                         Text("Start scanning food to see your history here")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
+                            .font(.bodyLarge)
+                            .foregroundColor(.textSecondary)
                             .multilineTextAlignment(.center)
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -51,6 +55,7 @@ struct HistoryView: View {
                         .onDelete(perform: deleteResults)
                     }
                     .listStyle(PlainListStyle())
+                }
                 }
             }
             .navigationTitle("Scan History")
@@ -85,18 +90,18 @@ struct HistoryRow: View {
             
             VStack(alignment: .leading, spacing: 4) {
                 Text(result.productName)
-                    .font(.subheadline)
+                    .font(.bodyLarge)
                     .fontWeight(.medium)
                     .lineLimit(2)
                 
                 Text(result.scannedAt.formatted(date: .abbreviated, time: .shortened))
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                    .font(.bodySmall)
+                    .foregroundColor(.textSecondary)
                 
                 if !result.analysisPoints.isEmpty {
                     Text(result.analysisPoints.first ?? "")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                        .font(.bodySmall)
+                        .foregroundColor(.textSecondary)
                         .lineLimit(1)
                 }
             }
@@ -122,71 +127,70 @@ struct HistoryDetailView: View {
                     // Product Name and Score
                     VStack(spacing: 16) {
                         Text(result.productName)
-                            .font(.title2)
-                            .fontWeight(.bold)
+                            .font(.welcomeTitle)
+                            .fontWeight(.medium)
                             .multilineTextAlignment(.center)
                         
-                        VStack(spacing: 8) {
-                            Text("NutriScore")
-                                .font(.headline)
-                                .fontWeight(.semibold)
-                            
-                            NutriScoreBadge(score: result.nutriScore, size: .large)
-                        }
+                        // Use the new NutriScore card with pills
+                        NutriScoreCard(
+                            score: result.nutriScore,
+                            productName: result.productName,
+                            showDetails: true
+                        )
                     }
                     
                     // Analysis Points
                     VStack(alignment: .leading, spacing: 12) {
                         Text("Health Analysis")
-                            .font(.headline)
-                            .fontWeight(.semibold)
+                            .font(.sectionHeader)
+                            .fontWeight(.medium)
                         
                         ForEach(result.analysisPoints, id: \.self) { point in
                             HStack(alignment: .top, spacing: 8) {
                                 Image(systemName: "circle.fill")
                                     .font(.system(size: 6))
-                                    .foregroundColor(Color(hex: "#4CAF50"))
+                                    .foregroundColor(.primaryGreen)
                                     .padding(.top, 6)
                                 
                                 Text(point)
-                                    .font(.subheadline)
+                                    .font(.bodyLarge)
                                     .fixedSize(horizontal: false, vertical: true)
                             }
                         }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding()
-                    .background(Color.gray.opacity(0.05))
+                    .background(Color.panelOffWhite)
                     .cornerRadius(12)
                     
                     // Citations
                     if !result.citations.isEmpty {
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Sources")
-                                .font(.subheadline)
-                                .fontWeight(.semibold)
+                                .font(.sectionHeader)
+                                .fontWeight(.medium)
                             
                             ForEach(result.citations, id: \.self) { citation in
                                 Text("• \(citation)")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
+                                    .font(.bodyMedium)
+                                    .foregroundColor(.textSecondary)
                             }
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding()
-                        .background(Color.blue.opacity(0.05))
+                        .background(Color.panelOffWhite)
                         .cornerRadius(12)
                     }
                     
                     // Scan Date
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Scanned")
-                            .font(.subheadline)
-                            .fontWeight(.semibold)
+                            .font(.sectionHeader)
+                            .fontWeight(.medium)
                         
                         Text(result.scannedAt.formatted(date: .complete, time: .shortened))
-                            .font(.caption)
-                            .foregroundColor(.secondary)
+                            .font(.bodyMedium)
+                            .foregroundColor(.textSecondary)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }

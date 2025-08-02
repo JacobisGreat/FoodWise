@@ -17,146 +17,138 @@ struct AnalysisView: View {
     @State private var analysisResult: GeminiAnalysisResult?
     @State private var isAnalyzing = true
     @State private var errorMessage = ""
-    @State private var showingSaveConfirmation = false
+    @State private var expandedSections: Set<String> = []
     @Environment(\.dismiss) private var dismiss
     
     var body: some View {
         NavigationView {
-            ScrollView {
-                VStack(spacing: 24) {
-                    // Product Image
-                    Image(uiImage: image)
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(maxHeight: 200)
-                        .cornerRadius(12)
-                        .padding(.horizontal)
-                    
-                    if isAnalyzing {
-                        // Loading State
-                        VStack(spacing: 16) {
-                            ProgressView()
-                                .scaleEffect(1.5)
-                            
+            VStack(spacing: 0) {
+                if isAnalyzing {
+                    // Compact Loading State
+                    VStack(spacing: 20) {
+                        Image(uiImage: image)
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(height: 120)
+                            .cornerRadius(12)
+                        
+                        VStack(spacing: 20) {
+                            LoadingDotsView(color: .primaryGreen, size: 8)
                             Text("Analyzing nutrition...")
-                                .font(.headline)
-                                .fontWeight(.medium)
-                            
-                            if let barcode = barcode {
-                                Text("Found barcode: \(barcode)")
-                                    .font(.caption)
-                                    .foregroundColor(.blue)
-                                Text("Fetching product data...")
-                                    .font(.subheadline)
-                                    .foregroundColor(.secondary)
-                            } else {
-                                Text("No barcode detected")
-                                    .font(.caption)
-                                    .foregroundColor(.orange)
-                                Text("Reading nutrition label...")
-                                    .font(.subheadline)
-                                    .foregroundColor(.secondary)
-                            }
+                                .font(.sectionHeader)
+                                .foregroundColor(.textPrimary)
                         }
-                        .padding()
-                    } else if !errorMessage.isEmpty {
-                        // Error State
-                        VStack(spacing: 16) {
-                            Image(systemName: "exclamationmark.triangle")
-                                .font(.system(size: 40))
-                                .foregroundColor(.orange)
-                            
-                            Text("Analysis Failed")
-                                .font(.headline)
-                                .fontWeight(.semibold)
-                            
-                            Text(errorMessage)
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                                .multilineTextAlignment(.center)
-                            
-                            Button("Try Again") {
-                                analyzeProduct()
-                            }
-                            .buttonStyle(.bordered)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(Color.backgroundWhite)
+                    
+                } else if !errorMessage.isEmpty {
+                    // Compact Error State
+                    VStack(spacing: 20) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .font(.system(size: 40))
+                            .foregroundColor(.error)
+                        
+                        Text("Analysis Failed")
+                            .font(.sectionHeader)
+                            .fontWeight(.medium)
+                            .foregroundColor(.textPrimary)
+                        
+                        Text(errorMessage)
+                            .font(.bodyMedium)
+                            .foregroundColor(.textSecondary)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 24)
+                        
+                        Button("Try Again") {
+                            analyzeProduct()
                         }
-                        .padding()
-                    } else if let result = analysisResult {
-                        // Results State
-                        VStack(spacing: 24) {
-                            // Product Name
+                        .buttonStyle(PrimaryButtonStyle())
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(Color.backgroundWhite)
+                    
+                } else if let result = analysisResult {
+                    // Scrollable Results with enhanced animations
+                    ScrollView {
+                        LazyVStack(spacing: 24) {
+                        // Product Header
+                        VStack(spacing: 12) {
+                            Image(uiImage: image)
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(height: 80)
+                                .cornerRadius(8)
+                            
                             if let productName = result.productName {
                                 Text(productName)
-                                    .font(.title2)
-                                    .fontWeight(.bold)
+                                    .font(.welcomeTitle)
+                                    .fontWeight(.medium)
+                                    .foregroundColor(.textPrimary)
                                     .multilineTextAlignment(.center)
+                                    .lineLimit(2)
                             }
                             
-                            // NutriScore
-                            VStack(spacing: 8) {
-                                Text("NutriScore")
-                                    .font(.headline)
-                                    .fontWeight(.semibold)
+                            VStack(spacing: 12) {
+                                NutriScoreBadge(score: result.nutriScore, size: .medium)
                                 
-                                NutriScoreBadge(score: result.nutriScore, size: .large)
-                            }
-                            
-                            // Analysis Points
-                            VStack(alignment: .leading, spacing: 12) {
-                                Text("Health Analysis")
-                                    .font(.headline)
-                                    .fontWeight(.semibold)
-                                
-                                ForEach(result.analysisPoints, id: \.self) { point in
-                                    HStack(alignment: .top, spacing: 8) {
-                                        Image(systemName: "circle.fill")
-                                            .font(.system(size: 6))
-                                            .foregroundColor(Color(hex: "#4CAF50"))
-                                            .padding(.top, 6)
-                                        
-                                        Text(point)
-                                            .font(.subheadline)
-                                            .fixedSize(horizontal: false, vertical: true)
-                                    }
-                                }
-                            }
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding()
-                            .background(Color.gray.opacity(0.05))
-                            .cornerRadius(12)
-                            
-                            // Citations
-                            if !result.citations.isEmpty {
-                                VStack(alignment: .leading, spacing: 8) {
-                                    Text("Sources")
-                                        .font(.subheadline)
-                                        .fontWeight(.semibold)
-                                    
-                                    ForEach(result.citations, id: \.self) { citation in
-                                        Text("• \(citation)")
-                                            .font(.caption)
-                                            .foregroundColor(.secondary)
-                                    }
-                                }
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding()
-                                .background(Color.blue.opacity(0.05))
-                                .cornerRadius(12)
-                            }
-                            
-                            // Save Button
-                            Button(action: saveResult) {
-                                Text("Save to History")
-                                    .fontWeight(.semibold)
-                                    .frame(maxWidth: .infinity)
-                                    .frame(height: 50)
-                                    .background(Color(hex: "#4CAF50"))
-                                    .foregroundColor(.white)
-                                    .cornerRadius(10)
+                                // Add NutriScore pills visualization
+                                NutriScorePills(score: result.nutriScore, style: .expanded)
                             }
                         }
-                        .padding(.horizontal)
+                        
+                        // Key Points Summary
+                        VStack(spacing: 12) {
+                            ExpandableSection(
+                                title: "Health Impact",
+                                icon: "heart.fill",
+                                color: .primaryGreen,
+                                isExpanded: expandedSections.contains("health"),
+                                summary: "",
+                                details: result.analysisPoints
+                            ) {
+                                toggleSection("health")
+                            }
+                            
+                            ExpandableSection(
+                                title: "Key Nutrients",
+                                icon: "leaf.fill",
+                                color: .accentTeal,
+                                isExpanded: expandedSections.contains("nutrients"),
+                                summary: "",
+                                details: getNutrientDetails(from: result.analysisPoints)
+                            ) {
+                                toggleSection("nutrients")
+                            }
+                            
+                            ExpandableSection(
+                                title: "Ingredients",
+                                icon: "list.bullet",
+                                color: .infoBlue,
+                                isExpanded: expandedSections.contains("ingredients"),
+                                summary: "",
+                                details: result.ingredients ?? ["Ingredients information not available"]
+                            ) {
+                                toggleSection("ingredients")
+                            }
+                        }
+                        .padding(.horizontal, 20)
+                        
+                        // Auto-saved indicator
+                        HStack(spacing: 8) {
+                            Image(systemName: "checkmark.circle.fill")
+                                .foregroundColor(.primaryGreen)
+                                .font(.labelLarge)
+                            Text("Saved to history")
+                                .font(.bodySmall)
+                                .foregroundColor(.textSecondary)
+                        }
+                        .padding(.top, 8)
+                        .padding(.bottom, 24)
+                        }
+                        .padding(.top, 16)
                     }
+                    .background(Color.backgroundWhite)
                 }
             }
             .navigationTitle("Analysis")
@@ -166,20 +158,35 @@ struct AnalysisView: View {
                     Button("Close") {
                         dismiss()
                     }
+                    .foregroundColor(.primaryGreen)
                 }
             }
         }
         .onAppear {
             analyzeProduct()
         }
-        .alert("Saved!", isPresented: $showingSaveConfirmation) {
-            Button("OK") {
-                dismiss()
+    }
+    
+    private func toggleSection(_ section: String) {
+        withAnimation(.spring(response: 0.6, dampingFraction: 0.8, blendDuration: 0)) {
+            if expandedSections.contains(section) {
+                expandedSections.remove(section)
+            } else {
+                expandedSections.insert(section)
             }
-        } message: {
-            Text("Analysis saved to your history")
         }
     }
+    
+
+    
+    private func getNutrientDetails(from points: [String]) -> [String] {
+        let nutrientKeywords = ["protein", "sugar", "fat", "sodium", "fiber", "vitamin", "mineral", "calorie"]
+        return points.filter { point in
+            nutrientKeywords.contains { point.lowercased().contains($0) }
+        }
+    }
+    
+
     
     private func analyzeProduct() {
         guard let userProfile = authManager.currentUserProfile else { 
@@ -190,6 +197,8 @@ struct AnalysisView: View {
         print("🚀 Starting product analysis...")
         print("👤 User profile: \(userProfile.name), Age: \(userProfile.age), Conditions: \(userProfile.medicalConditions)")
         
+        // Clear previous state to prevent flickering
+        analysisResult = nil
         isAnalyzing = true
         errorMessage = ""
         
@@ -211,23 +220,41 @@ struct AnalysisView: View {
                 print("🎉 Analysis completed successfully!")
                 print("📋 Result: NutriScore \(result.nutriScore), \(result.analysisPoints.count) points, \(result.citations.count) citations")
                 
+                // Automatically save the result
+                await self.autoSaveResult(result)
+                
+                // Ensure atomic update to prevent UI flickering
                 DispatchQueue.main.async {
-                    self.analysisResult = result
-                    self.isAnalyzing = false
+                    // Add a small delay to ensure smooth transition
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        // Clear any error message first
+                        self.errorMessage = ""
+                        // Set both result and analyzing state atomically
+                        self.analysisResult = result
+                        self.isAnalyzing = false
+                    }
                 }
             } catch {
                 print("❌ Analysis failed: \(error)")
                 DispatchQueue.main.async {
-                    self.isAnalyzing = false
-                    self.errorMessage = error.localizedDescription
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        // Clear result and set error state atomically
+                        self.analysisResult = nil
+                        self.isAnalyzing = false
+                        self.errorMessage = error.localizedDescription
+                    }
                 }
             }
         }
     }
     
-    private func saveResult() {
-        guard let result = analysisResult,
-              let userId = authManager.user?.uid else { return }
+    private func autoSaveResult(_ result: GeminiAnalysisResult) async {
+        guard let userId = authManager.user?.uid else {
+            print("❌ Cannot auto-save: No authenticated user")
+            return
+        }
+        
+        print("💾 Auto-saving analysis result for \(result.productName ?? "Unknown Product")")
         
         let scanResult = ScanResult(
             userId: userId,
@@ -235,21 +262,120 @@ struct AnalysisView: View {
             nutriScore: result.nutriScore,
             analysisPoints: result.analysisPoints,
             citations: result.citations,
-            barcode: barcode
+            barcode: barcode,
+            ingredients: result.ingredients
         )
         
-        Task {
-            do {
-                try await scanHistoryManager.saveScanResult(scanResult)
-                DispatchQueue.main.async {
-                    self.showingSaveConfirmation = true
+        do {
+            try await scanHistoryManager.saveScanResult(scanResult)
+            print("✅ Analysis automatically saved to history")
+        } catch {
+            print("❌ Failed to auto-save analysis: \(error)")
+        }
+    }
+}
+
+struct ExpandableSection: View {
+    let title: String
+    let icon: String
+    let color: Color
+    let isExpanded: Bool
+    let summary: String
+    let details: [String]
+    let onTap: () -> Void
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            // Main section header - always visible
+            Button(action: onTap) {
+                HStack(spacing: 12) {
+                    Image(systemName: icon)
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(color)
+                        .frame(width: 20)
+                        .scaleEffect(isExpanded ? 1.1 : 1.0)
+                        .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isExpanded)
+                    
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(title)
+                            .font(.sectionHeader)
+                            .fontWeight(.medium)
+                            .foregroundColor(.textPrimary)
+                        
+                        if !summary.isEmpty {
+                            Text(summary)
+                                .font(.bodySmall)
+                                .foregroundColor(.textSecondary)
+                                .lineLimit(isExpanded ? nil : 2)
+                                .animation(.easeInOut(duration: 0.3), value: isExpanded)
+                        }
+                    }
+                    
+                    Spacer()
+                    
+                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.textTertiary)
+                        .rotationEffect(.degrees(isExpanded ? 180 : 0))
+                        .animation(.spring(response: 0.5, dampingFraction: 0.7), value: isExpanded)
                 }
-            } catch {
-                print("Error saving result: \(error)")
+                .padding(16)
+                .background(
+                    Color.cardBackground
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(isExpanded ? color.opacity(0.3) : Color.clear, lineWidth: 1)
+                                .animation(.easeInOut(duration: 0.3), value: isExpanded)
+                        )
+                )
+                .cornerRadius(12)
+                .scaleEffect(isExpanded ? 1.02 : 1.0)
+                .animation(.spring(response: 0.4, dampingFraction: 0.8), value: isExpanded)
+            }
+            .buttonStyle(PlainButtonStyle())
+            
+            // Expanded details with smooth animation
+            if isExpanded && !details.isEmpty {
+                VStack(alignment: .leading, spacing: 12) {
+                    ForEach(Array(details.enumerated()), id: \.offset) { index, detail in
+                        HStack(alignment: .top, spacing: 12) {
+                            Image(systemName: "circle.fill")
+                                .font(.system(size: 4))
+                                .foregroundColor(color)
+                                .padding(.top, 6)
+                            
+                            Text(detail)
+                                .font(.bodyMedium)
+                                .foregroundColor(.textSecondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        .opacity(isExpanded ? 1.0 : 0.0)
+                        .offset(y: isExpanded ? 0 : -10)
+                        .animation(.easeInOut(duration: 0.3).delay(Double(index) * 0.05), value: isExpanded)
+                    }
+                }
+                .padding(16)
+                .padding(.top, 8)
+                .background(
+                    Color.cardBackground
+                        .opacity(0.7)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(color.opacity(0.2), lineWidth: 1)
+                        )
+                )
+                .cornerRadius(12)
+                .padding(.top, 4)
+                .transition(.asymmetric(
+                    insertion: .scale(scale: 0.95).combined(with: .opacity),
+                    removal: .scale(scale: 0.95).combined(with: .opacity)
+                ))
             }
         }
     }
 }
+
+
 
 #Preview {
     AnalysisView(image: UIImage(systemName: "photo")!, barcode: nil)

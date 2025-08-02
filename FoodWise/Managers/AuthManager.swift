@@ -14,11 +14,15 @@ class AuthManager: ObservableObject {
     @Published var user: FirebaseAuth.User?
     @Published var isAuthenticated = false
     @Published var currentUserProfile: User?
+    @Published var isLoadingProfile = false
     
     private var db = Firestore.firestore()
     private var cancellables = Set<AnyCancellable>()
     
     init() {
+        // Start with loading state
+        isLoadingProfile = true
+        
         Auth.auth().addStateDidChangeListener { [weak self] _, user in
             DispatchQueue.main.async {
                 self?.user = user
@@ -26,11 +30,20 @@ class AuthManager: ObservableObject {
                 
                 if let user = user {
                     print("User signed in: \(user.email ?? "No email"), UID: \(user.uid)")
+                    // Keep loading state true while we fetch profile
                     self?.loadUserProfile(userId: user.uid)
                 } else {
                     print("User signed out")
                     self?.currentUserProfile = nil
+                    self?.isLoadingProfile = false
                 }
+            }
+        }
+        
+        // Add minimum loading time to prevent flicker
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            if self.user == nil {
+                self.isLoadingProfile = false
             }
         }
     }
@@ -63,6 +76,7 @@ class AuthManager: ObservableObject {
         
         DispatchQueue.main.async {
             self.currentUserProfile = userProfile
+            self.isLoadingProfile = false
         }
     }
     
@@ -86,6 +100,7 @@ class AuthManager: ObservableObject {
                 DispatchQueue.main.async {
                     // If there's an error, the user might need to complete onboarding
                     self?.currentUserProfile = nil
+                    self?.isLoadingProfile = false
                 }
                 return
             }
@@ -96,6 +111,7 @@ class AuthManager: ObservableObject {
                 DispatchQueue.main.async {
                     // Profile doesn't exist - user needs to complete onboarding
                     self?.currentUserProfile = nil
+                    self?.isLoadingProfile = false
                 }
                 return
             }
@@ -104,6 +120,7 @@ class AuthManager: ObservableObject {
                 print("No data in user profile document")
                 DispatchQueue.main.async {
                     self?.currentUserProfile = nil
+                    self?.isLoadingProfile = false
                 }
                 return
             }
@@ -117,20 +134,19 @@ class AuthManager: ObservableObject {
                     age: data["age"] as? Int ?? 0,
                     height: data["height"] as? Double ?? 0.0,
                     weight: data["weight"] as? Double ?? 0.0,
-                    medicalConditions: data["medicalConditions"] as? [String] ?? [],
-                    customHealthConditions: data["customHealthConditions"] as? [String] ?? [],
-                    healthGoals: data["healthGoals"] as? String ?? "",
-                    additionalHealthConcerns: data["additionalHealthConcerns"] as? String ?? ""
+                    medicalConditions: data["medicalConditions"] as? [String] ?? []
                 )
                 
                 DispatchQueue.main.async {
                     self?.currentUserProfile = userProfile
+                    self?.isLoadingProfile = false
                     print("User profile loaded successfully: \(userProfile.name)")
                 }
             } catch {
                 print("Error decoding user profile: \(error)")
                 DispatchQueue.main.async {
                     self?.currentUserProfile = nil
+                    self?.isLoadingProfile = false
                 }
             }
         }
@@ -150,9 +166,6 @@ class AuthManager: ObservableObject {
             "height": updatedUser.height,
             "weight": updatedUser.weight,
             "medicalConditions": updatedUser.medicalConditions,
-            "customHealthConditions": updatedUser.customHealthConditions,
-            "healthGoals": updatedUser.healthGoals,
-            "additionalHealthConcerns": updatedUser.additionalHealthConcerns,
             "createdAt": updatedUser.createdAt
         ]
         

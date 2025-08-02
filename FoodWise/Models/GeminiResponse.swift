@@ -29,4 +29,5 @@ struct GeminiAnalysisResult: Codable {
     let citations: [String]
     let productName: String?
     let confidence: Double?
+    let ingredients: [String]?
 }

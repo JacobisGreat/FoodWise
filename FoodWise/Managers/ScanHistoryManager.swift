@@ -17,6 +17,7 @@ class ScanHistoryManager: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
     
     func loadScanHistory(for userId: String) {
+        print("📚 Loading scan history for userId: \(userId)")
         isLoading = true
         
         // Simplified query to avoid index requirement
@@ -28,16 +29,31 @@ class ScanHistoryManager: ObservableObject {
                 }
                 
                 if let error = error {
-                    print("Error loading scan history: \(error)")
+                    print("❌ Error loading scan history: \(error)")
                     return
                 }
                 
-                guard let documents = querySnapshot?.documents else { return }
+                guard let documents = querySnapshot?.documents else { 
+                    print("⚠️ No documents found in scan history query")
+                    return 
+                }
+                
+                print("📊 Found \(documents.count) scan history documents")
                 
                 let results = documents.compactMap { document -> ScanResult? in
                     let data = document.data()
                     
-                    return ScanResult(
+                    // Handle the scannedAt timestamp properly
+                    let scannedAt: Date
+                    if let timestamp = data["scannedAt"] as? Timestamp {
+                        scannedAt = timestamp.dateValue()
+                    } else if let date = data["scannedAt"] as? Date {
+                        scannedAt = date
+                    } else {
+                        scannedAt = Date() // Fallback to current date
+                    }
+                    
+                    let result = ScanResult(
                         id: document.documentID,
                         userId: data["userId"] as? String ?? "",
                         productName: data["productName"] as? String ?? "",
@@ -45,12 +61,19 @@ class ScanHistoryManager: ObservableObject {
                         nutriScore: data["nutriScore"] as? String ?? "",
                         analysisPoints: data["analysisPoints"] as? [String] ?? [],
                         citations: data["citations"] as? [String] ?? [],
-                        barcode: data["barcode"] as? String
+                        barcode: data["barcode"] as? String,
+                        scannedAt: scannedAt
                     )
+                    
+                    print("📱 Loaded scan result: \(result.productName) - \(result.nutriScore) - \(result.scannedAt)")
+                    
+                    return result
                 }
                 
                 // Sort by date in memory instead of in query
-                let sortedResults = results.sorted { ($0.scannedAt) > ($1.scannedAt) }
+                let sortedResults = results.sorted { $0.scannedAt > $1.scannedAt }
+                
+                print("✅ Loaded \(sortedResults.count) scan results, sorted by date")
                 
                 DispatchQueue.main.async {
                     self?.scanHistory = sortedResults
@@ -59,6 +82,8 @@ class ScanHistoryManager: ObservableObject {
     }
     
     func saveScanResult(_ result: ScanResult) async throws {
+        print("💾 Saving scan result: \(result.productName) for user: \(result.userId)")
+        
         let data: [String: Any] = [
             "userId": result.userId,
             "productName": result.productName,
@@ -70,13 +95,17 @@ class ScanHistoryManager: ObservableObject {
             "barcode": result.barcode as Any
         ]
         
+        print("📦 Scan result data: \(data)")
+        
         let docRef = try await db.collection("scanResults").addDocument(data: data)
+        print("✅ Scan result saved with ID: \(docRef.documentID)")
         
         // Add to local array immediately for better UX
         DispatchQueue.main.async {
             var resultWithId = result
             resultWithId.id = docRef.documentID
             self.scanHistory.insert(resultWithId, at: 0)
+            print("📱 Added to local scan history. Total items: \(self.scanHistory.count)")
         }
     }
     

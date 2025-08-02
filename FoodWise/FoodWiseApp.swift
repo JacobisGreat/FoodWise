@@ -21,7 +21,10 @@ struct FoodWiseApp: App {
         WindowGroup {
             Group {
                 if authManager.isAuthenticated {
-                    if authManager.currentUserProfile != nil {
+                    if authManager.isLoadingProfile {
+                        // Show custom loading screen while profile loads
+                        LoadingView()
+                    } else if authManager.currentUserProfile != nil {
                         // User is authenticated and has profile - show main app
                         MainTabView()
                             .environmentObject(authManager)
