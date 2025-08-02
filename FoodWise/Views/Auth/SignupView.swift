@@ -8,96 +8,178 @@
 import SwiftUI
 
 struct SignupView: View {
-    @StateObject private var authManager = AuthManager()
+    @EnvironmentObject var authManager: AuthManager
     @State private var email = ""
     @State private var password = ""
     @State private var confirmPassword = ""
     @State private var name = ""
     @State private var showingLogin = false
-    @State private var showingOnboarding = false
     @State private var isLoading = false
     @State private var errorMessage = ""
     
     var body: some View {
         NavigationView {
-            VStack(spacing: 24) {
-                Spacer()
+            ZStack {
+                // Modern gradient background
+                LinearGradient(
+                    gradient: Gradient(colors: [
+                        Color.white,
+                        AppColors.primaryGreen.opacity(0.05),
+                        AppColors.primaryGreen.opacity(0.1)
+                    ]),
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .ignoresSafeArea()
                 
-                // Logo and Title
-                VStack(spacing: 16) {
-                    Image(systemName: "leaf.circle.fill")
-                        .font(.system(size: 80))
-                        .foregroundColor(Color(hex: "#4CAF50"))
-                    
-                    Text("FoodWise")
-                        .font(.largeTitle)
-                        .fontWeight(.bold)
-                        .foregroundColor(.primary)
-                    
-                    Text("Make smarter food choices")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
+                ScrollView {
+                    VStack(spacing: 32) {
+                        Spacer()
+                            .frame(height: 40)
+                        
+                        // Enhanced Logo and Title
+                        VStack(spacing: 20) {
+                            ZStack {
+                                Circle()
+                                    .fill(AppColors.primaryGreen.opacity(0.1))
+                                    .frame(width: 120, height: 120)
+                                
+                                Image(systemName: "leaf.circle.fill")
+                                    .font(.system(size: 60))
+                                    .foregroundColor(AppColors.primaryGreen)
+                                    .shadow(color: AppColors.primaryGreen.opacity(0.3), radius: 10, x: 0, y: 5)
+                            }
+                            
+                            VStack(spacing: 8) {
+                                Text("Welcome to FoodWise")
+                                    .font(.largeTitle)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.primary)
+                                
+                                Text("Your journey to healthier eating starts here")
+                                    .font(.body)
+                                    .foregroundColor(.secondary)
+                                    .multilineTextAlignment(.center)
+                                    .padding(.horizontal)
+                            }
+                        }
+                        
+                        // Modern Form Card
+                        VStack(spacing: 20) {
+                            ModernTextField(
+                                placeholder: "Full Name",
+                                text: $name,
+                                icon: "person.fill"
+                            )
+                            
+                            ModernTextField(
+                                placeholder: "Email Address",
+                                text: $email,
+                                icon: "envelope.fill",
+                                keyboardType: .emailAddress
+                            )
+                            
+                            ModernSecureField(
+                                placeholder: "Password",
+                                text: $password,
+                                icon: "lock.fill"
+                            )
+                            
+                            ModernSecureField(
+                                placeholder: "Confirm Password",
+                                text: $confirmPassword,
+                                icon: "lock.fill"
+                            )
+                            
+                            if !errorMessage.isEmpty {
+                                HStack {
+                                    Image(systemName: "exclamationmark.triangle.fill")
+                                        .foregroundColor(.red)
+                                    Text(errorMessage)
+                                        .foregroundColor(.red)
+                                        .font(.caption)
+                                    Spacer()
+                                }
+                                .padding(.horizontal, 4)
+                            }
+                        }
+                        .padding(.horizontal, 24)
+                        
+                        // Enhanced Sign Up Button
+                        VStack(spacing: 16) {
+                            Button(action: {
+            isLoading = true
+            Task {
+                do {
+                    try await authManager.signUpForOnboarding(email: email, password: password, name: name)
+                    print("✅ Account created successfully - proceeding to onboarding")
+                } catch {
+                    print("❌ Signup error: \(error)")
+                    self.errorMessage = error.localizedDescription
+                    isLoading = false
                 }
-                
-                Spacer()
-                
-                // Form
-                VStack(spacing: 16) {
-                    TextField("Full Name", text: $name)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                    
-                    TextField("Email", text: $email)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                        .keyboardType(.emailAddress)
-                        .autocapitalization(.none)
-                    
-                    SecureField("Password", text: $password)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                    
-                    SecureField("Confirm Password", text: $confirmPassword)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                    
-                    if !errorMessage.isEmpty {
-                        Text(errorMessage)
-                            .foregroundColor(.red)
-                            .font(.caption)
+            }
+        }) {
+                                HStack {
+                                    if isLoading {
+                                        ProgressView()
+                                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                            .scaleEffect(0.8)
+                                    } else {
+                                        Image(systemName: "person.badge.plus")
+                                        Text("Create Account")
+                                            .fontWeight(.semibold)
+                                    }
+                                }
+                            }
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 56)
+                            .background(
+                                LinearGradient(
+                                    gradient: Gradient(colors: [
+                                        AppColors.primaryGreen,
+                                        AppColors.primaryGreen.opacity(0.8)
+                                    ]),
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
+                            .foregroundColor(.white)
+                            .cornerRadius(16)
+                            .shadow(color: AppColors.primaryGreen.opacity(0.3), radius: 10, x: 0, y: 5)
+                            .scaleEffect(isLoading ? 0.95 : 1.0)
+                            .animation(.spring(response: 0.3), value: isLoading)
+                            .disabled(isLoading || !isFormValid)
+                            .padding(.horizontal, 24)
+                            
+                            // Login Link
+                            Button("Already have an account? Sign In") {
+                                showingLogin = true
+                            }
+                            .foregroundColor(AppColors.primaryGreen)
+                            .font(.body)
+                            .fontWeight(.medium)
+                        }
+                        
+                        // Development helper (only show in debug)
+                        #if DEBUG
+                        Button("🧪 Fill Test Data") {
+                            fillTestData()
+                        }
+                        .foregroundColor(AppColors.textTertiary)
+                        .font(.caption)
+                        #endif
+                        
+                        Spacer()
+                            .frame(height: 40)
                     }
                 }
-                .padding(.horizontal)
-                
-                // Sign Up Button
-                Button(action: signUp) {
-                    if isLoading {
-                        ProgressView()
-                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                    } else {
-                        Text("Create Account")
-                            .fontWeight(.semibold)
-                    }
-                }
-                .frame(maxWidth: .infinity)
-                .frame(height: 50)
-                .background(Color(hex: "#4CAF50"))
-                .foregroundColor(.white)
-                .cornerRadius(10)
-                .padding(.horizontal)
-                .disabled(isLoading || !isFormValid)
-                
-                // Login Link
-                Button("Already have an account? Sign In") {
-                    showingLogin = true
-                }
-                .foregroundColor(Color(hex: "#4CAF50"))
-                
-                Spacer()
             }
             .navigationBarHidden(true)
         }
         .sheet(isPresented: $showingLogin) {
             LoginView()
-        }
-        .fullScreenCover(isPresented: $showingOnboarding) {
-            OnboardingView()
+                .environmentObject(authManager)
         }
     }
     
@@ -108,37 +190,110 @@ struct SignupView: View {
     
     private func signUp() {
         guard isFormValid else {
-            errorMessage = "Please fill all fields correctly"
+            if name.isEmpty {
+                errorMessage = "Please enter your name"
+            } else if email.isEmpty {
+                errorMessage = "Please enter your email"
+            } else if password.isEmpty {
+                errorMessage = "Please enter a password"
+            } else if password != confirmPassword {
+                errorMessage = "Passwords don't match"
+            } else if password.count < 6 {
+                errorMessage = "Password must be at least 6 characters"
+            } else {
+                errorMessage = "Please fill all fields correctly"
+            }
             return
         }
         
         isLoading = true
         errorMessage = ""
         
+        print("📝 Attempting to sign up with email: \(email), name: \(name)")
+        
         Task {
             do {
-                // Create account with basic info, then redirect to onboarding
-                try await authManager.signUp(
+                // Create account WITHOUT profile - onboarding will handle profile creation
+                try await authManager.signUpForOnboarding(
                     email: email,
                     password: password,
-                    name: name,
-                    age: 25, // Will be updated in onboarding
-                    height: 170, // Will be updated in onboarding
-                    weight: 70, // Will be updated in onboarding
-                    medicalConditions: [] // Will be updated in onboarding
+                    name: name
                 )
                 
+                print("✅ Sign up successful, account created without profile")
+                print("🎯 App should now show onboarding automatically")
                 DispatchQueue.main.async {
                     self.isLoading = false
-                    self.showingOnboarding = true
+                    // No need to set showingOnboarding - the app will detect no profile and show onboarding
                 }
             } catch {
+                print("❌ Sign up failed: \(error.localizedDescription)")
                 DispatchQueue.main.async {
                     self.isLoading = false
                     self.errorMessage = error.localizedDescription
                 }
             }
         }
+    }
+    
+    private func fillTestData() {
+        name = "Test User"
+        email = "test@foodwise.com"
+        password = "test123"
+        confirmPassword = "test123"
+    }
+}
+
+// MARK: - Modern UI Components
+
+struct ModernTextField: View {
+    let placeholder: String
+    @Binding var text: String
+    let icon: String
+    var keyboardType: UIKeyboardType = .default
+    
+    var body: some View {
+        HStack(spacing: 16) {
+            Image(systemName: icon)
+                .foregroundColor(AppColors.primaryGreen)
+                .frame(width: 20)
+            
+            TextField(placeholder, text: $text)
+                .keyboardType(keyboardType)
+                .autocapitalization(keyboardType == .emailAddress ? .none : .words)
+        }
+        .padding()
+        .background(Color.white)
+        .cornerRadius(16)
+        .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 4)
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(AppColors.primaryGreen.opacity(0.2), lineWidth: 1)
+        )
+    }
+}
+
+struct ModernSecureField: View {
+    let placeholder: String
+    @Binding var text: String
+    let icon: String
+    
+    var body: some View {
+        HStack(spacing: 16) {
+            Image(systemName: icon)
+                .foregroundColor(AppColors.primaryGreen)
+                .frame(width: 20)
+            
+            SecureField(placeholder, text: $text)
+        }
+        .padding()
+        .background(Color.white)
+        .cornerRadius(16)
+        .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 4)
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(AppColors.primaryGreen.opacity(0.2), lineWidth: 1)
+        )
     }
 }
 

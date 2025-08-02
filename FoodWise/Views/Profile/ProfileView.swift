@@ -16,33 +16,34 @@ struct ProfileView: View {
         NavigationView {
             ZStack {
                 // Background
-                Color.backgroundWhite
+                AppColors.backgroundWhite
                     .ignoresSafeArea()
                 
-                VStack(spacing: 24) {
-                    // Profile Header
-                    VStack(spacing: 16) {
-                        Circle()
-                            .fill(Color.primaryGreen)
-                            .frame(width: 80, height: 80)
-                            .overlay(
-                                Text(authManager.currentUserProfile?.name.prefix(1).uppercased() ?? "U")
-                                    .font(.titleLarge)
-                                    .fontWeight(.medium)
-                                    .foregroundColor(.white)
-                            )
-                        
-                        VStack(spacing: 4) {
-                            Text(authManager.currentUserProfile?.name ?? "User")
-                                .font(.welcomeTitle)
-                                .fontWeight(.medium)
+                ScrollView {
+                    LazyVStack(spacing: 24) {
+                        // Profile Header
+                        VStack(spacing: 16) {
+                            Circle()
+                                .fill(AppColors.primaryGreen)
+                                .frame(width: 80, height: 80)
+                                .overlay(
+                                    Text(authManager.currentUserProfile?.name.prefix(1).uppercased() ?? "U")
+                                        .font(.title)
+                                        .fontWeight(.medium)
+                                        .foregroundColor(.white)
+                                )
                             
-                            Text(authManager.currentUserProfile?.email ?? "")
-                                .font(.bodyLarge)
-                                .foregroundColor(.textSecondary)
+                            VStack(spacing: 4) {
+                                Text(authManager.currentUserProfile?.name ?? "User")
+                                    .font(.title2)
+                                    .fontWeight(.medium)
+                                
+                                Text(authManager.currentUserProfile?.email ?? "")
+                                    .font(.body)
+                                    .foregroundColor(.textSecondary)
+                            }
                         }
-                    }
-                    .padding(.top)
+                        .padding(.top)
                     
                     // Profile Info
                     if let profile = authManager.currentUserProfile {
@@ -54,7 +55,7 @@ struct ProfileView: View {
                             VStack(alignment: .leading, spacing: 8) {
                                 HStack {
                                     Text("Health Conditions")
-                                        .font(.sectionHeader)
+                                        .font(.headline)
                                         .fontWeight(.medium)
                                         .foregroundColor(.textPrimary)
                                     Spacer()
@@ -62,39 +63,42 @@ struct ProfileView: View {
                                 
                                 if profile.medicalConditions.isEmpty {
                                     Text("None specified")
-                                        .font(.bodyLarge)
+                                        .font(.body)
                                 } else {
                                     VStack(alignment: .leading, spacing: 4) {
                                         ForEach(profile.medicalConditions, id: \.self) { condition in
                                             Text("• \(condition)")
-                                                .font(.bodyLarge)
+                                                .font(.body)
                                         }
                                     }
                                 }
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding()
-                            .background(Color.panelOffWhite)
+                            .background(AppColors.panelOffWhite)
                             .cornerRadius(12)
                         }
                     }
                     
-                    // Action Buttons
-                    VStack(spacing: 12) {
-                        Button("Edit Profile") {
-                            showingEditProfile = true
+                        // Action Buttons
+                        VStack(spacing: 12) {
+                            Button("Edit Profile") {
+                                showingEditProfile = true
+                            }
+                            .buttonStyle(PrimaryButtonStyle())
+                            
+                            Button("Sign Out") {
+                                showingSignOutAlert = true
+                            }
+                            .buttonStyle(SecondaryButtonStyle())
                         }
-                        .buttonStyle(PrimaryButtonStyle())
                         
-                        Button("Sign Out") {
-                            showingSignOutAlert = true
-                        }
-                        .buttonStyle(SecondaryButtonStyle())
+                        // Extra spacing for tab bar
+                        Spacer()
+                            .frame(height: 100)
                     }
-                    
-                    Spacer()
+                    .padding()
                 }
-                .padding()
                 .navigationTitle("Profile")
                 .navigationBarTitleDisplayMode(.large)
             }
@@ -119,17 +123,17 @@ struct ProfileView: View {
         var body: some View {
             HStack {
                 Text(title)
-                    .font(.bodyLarge)
+                    .font(.body)
                     .fontWeight(.medium)
                     .foregroundColor(.textSecondary)
                 
                 Spacer()
                 
                 Text(value)
-                    .font(.bodyLarge)
+                    .font(.body)
             }
             .padding()
-            .background(Color.panelOffWhite)
+            .background(AppColors.panelOffWhite)
             .cornerRadius(12)
         }
     }
@@ -170,7 +174,7 @@ struct ProfileView: View {
                                 Spacer()
                                 if selectedConditions.contains(condition) {
                                     Image(systemName: "checkmark")
-                                        .foregroundColor(Color(hex: "#4CAF50"))
+                                        .foregroundColor(AppColors.primaryGreen)
                                 }
                             }
                             .contentShape(Rectangle())

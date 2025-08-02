@@ -9,9 +9,9 @@ import Foundation
 import UIKit
 
 class APIManager: ObservableObject {
-    private let geminiAPIKey = "AIzaSyDh4PSJ5QTZVqAcA9PVhSRs1uylVZYyZHU"
+    internal let geminiAPIKey = "AIzaSyBB9KIbBd5L1-sKvc6EgqsyWERwH9PSmII"
     private let openFoodFactsBaseURL = "https://world.openfoodfacts.org/api/v0/product"
-    private let geminiBaseURL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent"
+    internal let geminiBaseURL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent"
     
     func fetchProductData(barcode: String) async throws -> OpenFoodFactsProduct? {
         print("🔍 Fetching product data for barcode: \(barcode)")
@@ -113,6 +113,12 @@ class APIManager: ObservableObject {
         4. Look for concerning ingredients like: high fructose corn syrup, trans fats, artificial colors, excessive sodium, etc.
         5. Factor in your specific medical conditions
         
+        CRITICAL TEXT FORMATTING RULES:
+        - DO NOT use any markdown formatting (no *, **, _, __, etc.)
+        - Write in plain text only
+        - Use simple, clear language without special formatting
+        - Avoid bold, italic, or any markdown syntax
+        
         Please analyze this product comprehensively and provide:
         1. A NutriScore (A, B, C, D, or E) - A being the healthiest, considering BOTH nutrition AND ingredients
         2. 3-5 bullet points explaining why this product is suitable or unsuitable for you (mention specific ingredients/nutrients that concern or benefit you)
@@ -140,6 +146,8 @@ class APIManager: ObservableObject {
                 "Citric Acid - Natural preservative and flavor enhancer"
             ]
         }
+        
+        REMEMBER: Use plain text only, no markdown formatting in any text fields.
         """
     }
     
@@ -170,6 +178,12 @@ class APIManager: ObservableObject {
            - Factor in your specific medical conditions
         
         3. If you cannot clearly read both nutrition facts AND ingredients, ask for a clearer image
+        
+        CRITICAL TEXT FORMATTING RULES:
+        - DO NOT use any markdown formatting (no *, **, _, __, etc.)
+        - Write in plain text only
+        - Use simple, clear language without special formatting
+        - Avoid bold, italic, or any markdown syntax
         
         Please analyze this product image comprehensively and provide:
         1. A NutriScore (A, B, C, D, or E) - A being the healthiest, considering BOTH nutrition AND ingredients quality
@@ -203,6 +217,7 @@ class APIManager: ObservableObject {
             ]
         }
         
+        REMEMBER: Use plain text only, no markdown formatting in any text fields.
         IMPORTANT: Your analysis should be consistent - the same product should get the same NutriScore whether scanned by barcode or image!
         """
     }
@@ -255,7 +270,10 @@ class APIManager: ObservableObject {
         print("🔍 Extracted JSON: \(jsonString)")
         
         let jsonData = jsonString.data(using: .utf8)!
-        let result = try JSONDecoder().decode(GeminiAnalysisResult.self, from: jsonData)
+        var result = try JSONDecoder().decode(GeminiAnalysisResult.self, from: jsonData)
+        
+        // Clean up any markdown formatting that might have slipped through
+        result = cleanMarkdownFormatting(from: result)
         
         print("✅ Gemini Analysis Complete - NutriScore: \(result.nutriScore), Points: \(result.analysisPoints.count)")
         
@@ -327,7 +345,10 @@ class APIManager: ObservableObject {
         print("🔍 Extracted JSON from image analysis: \(jsonString)")
         
         let jsonData = jsonString.data(using: .utf8)!
-        let result = try JSONDecoder().decode(GeminiAnalysisResult.self, from: jsonData)
+        var result = try JSONDecoder().decode(GeminiAnalysisResult.self, from: jsonData)
+        
+        // Clean up any markdown formatting that might have slipped through
+        result = cleanMarkdownFormatting(from: result)
         
         print("✅ Gemini Image Analysis Complete - NutriScore: \(result.nutriScore), Points: \(result.analysisPoints.count)")
         
@@ -352,5 +373,51 @@ class APIManager: ObservableObject {
         print("🧹 Cleaned JSON text: \(cleanedText)")
         
         return cleanedText
+    }
+    
+    private func cleanMarkdownFormatting(from result: GeminiAnalysisResult) -> GeminiAnalysisResult {
+        // Clean analysis points
+        let cleanedAnalysisPoints = result.analysisPoints.map { point in
+            cleanMarkdownFromText(point)
+        }
+        
+        // Clean citations
+        let cleanedCitations = result.citations.map { citation in
+            cleanMarkdownFromText(citation)
+        }
+        
+        // Clean ingredients
+        let cleanedIngredients = result.ingredients?.map { ingredient in
+            cleanMarkdownFromText(ingredient)
+        }
+        
+        // Clean product name
+        let cleanedProductName = result.productName.map { cleanMarkdownFromText($0) }
+        
+        return GeminiAnalysisResult(
+            nutriScore: result.nutriScore,
+            analysisPoints: cleanedAnalysisPoints,
+            citations: cleanedCitations,
+            productName: cleanedProductName,
+            confidence: result.confidence,
+            ingredients: cleanedIngredients
+        )
+    }
+    
+    private func cleanMarkdownFromText(_ text: String) -> String {
+        return text
+            // Remove bold formatting
+            .replacingOccurrences(of: "**", with: "")
+            .replacingOccurrences(of: "__", with: "")
+            // Remove italic formatting
+            .replacingOccurrences(of: "*", with: "")
+            .replacingOccurrences(of: "_", with: "")
+            // Remove inline code formatting
+            .replacingOccurrences(of: "`", with: "")
+            // Remove strikethrough
+            .replacingOccurrences(of: "~~", with: "")
+            // Clean up any double spaces that might result
+            .replacingOccurrences(of: "  ", with: " ")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
     }
 }

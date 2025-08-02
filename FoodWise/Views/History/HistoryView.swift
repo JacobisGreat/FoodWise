@@ -163,6 +163,32 @@ struct HistoryDetailView: View {
                     .background(Color.panelOffWhite)
                     .cornerRadius(12)
                     
+                    // Ingredients
+                    if let ingredients = result.ingredients, !ingredients.isEmpty {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("Ingredients")
+                                .font(.sectionHeader)
+                                .fontWeight(.medium)
+                            
+                            ForEach(ingredients, id: \.self) { ingredient in
+                                HStack(alignment: .top, spacing: 8) {
+                                    Image(systemName: "circle.fill")
+                                        .font(.system(size: 6))
+                                        .foregroundColor(.infoBlue)
+                                        .padding(.top, 6)
+                                    
+                                    Text(ingredient)
+                                        .font(.bodyMedium)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                }
+                            }
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding()
+                        .background(Color.panelOffWhite)
+                        .cornerRadius(12)
+                    }
+                    
                     // Citations
                     if !result.citations.isEmpty {
                         VStack(alignment: .leading, spacing: 8) {

@@ -7,6 +7,55 @@
 
 import SwiftUI
 
+struct AnalysisDigestUpdate: Identifiable, Equatable {
+    let id = UUID()
+    let message: String
+}
+
+struct AnalysisRollingUpdates: View {
+    let updates: [AnalysisDigestUpdate]
+    let displayDuration: Double
+    let rollingDuration: Double
+    
+    @State private var currentIndex = 0
+    @State private var progressTimer: Timer?
+    
+    var body: some View {
+        VStack(spacing: 12) {
+            Text(updates[currentIndex].message)
+                .font(.sectionHeader)
+                .foregroundColor(.textPrimary)
+                .multilineTextAlignment(.center)
+                .contentTransition(.numericText())
+                .animation(.spring(response: 0.5, dampingFraction: 0.7), value: currentIndex)
+            
+            // Progress indicator
+            HStack(spacing: 4) {
+                ForEach(0..<updates.count, id: \.self) { index in
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(index <= currentIndex ? Color.primaryGreen : Color.primaryGreen.opacity(0.3))
+                        .frame(width: index == currentIndex ? 24 : 8, height: 4)
+                        .animation(.spring(response: 0.4, dampingFraction: 0.8), value: currentIndex)
+                }
+            }
+        }
+        .onAppear {
+            startProgressTimer()
+        }
+        .onDisappear {
+            progressTimer?.invalidate()
+        }
+    }
+    
+    private func startProgressTimer() {
+        progressTimer = Timer.scheduledTimer(withTimeInterval: 2.8, repeats: true) { _ in
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                currentIndex = (currentIndex + 1) % updates.count
+            }
+        }
+    }
+}
+
 struct AnalysisView: View {
     let image: UIImage
     let barcode: String?
@@ -24,23 +73,62 @@ struct AnalysisView: View {
         NavigationView {
             VStack(spacing: 0) {
                 if isAnalyzing {
-                    // Compact Loading State
-                    VStack(spacing: 20) {
-                        Image(uiImage: image)
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .frame(height: 120)
-                            .cornerRadius(12)
+                    // Enhanced Loading State with cooler animations
+                    VStack(spacing: 60) {
+                        ZStack {
+                            // Background glow effect
+                            Circle()
+                                .fill(Color.primaryGreen.opacity(0.1))
+                                .frame(width: 220, height: 220)
+                                .scaleEffect(1.2)
+                                .blur(radius: 10)
+                            
+                            Image(uiImage: image)
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(height: 180)
+                                .cornerRadius(16)
+                                .shadow(color: .black.opacity(0.15), radius: 15, x: 0, y: 8)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .stroke(Color.primaryGreen.opacity(0.3), lineWidth: 2)
+                                )
+                        }
                         
-                        VStack(spacing: 20) {
-                            LoadingDotsView(color: .primaryGreen, size: 8)
-                            Text("Analyzing nutrition...")
-                                .font(.sectionHeader)
-                                .foregroundColor(.textPrimary)
+                        VStack(spacing: 40) {
+                            // Enhanced loading animation
+                            ZStack {
+                                PulsingCircleLoadingView(color: .primaryGreen, size: 60)
+                                LoadingDotsView(color: .primaryGreen, size: 8)
+                                    .offset(y: 35)
+                            }
+                            
+                            AnalysisRollingUpdates(
+                                updates: [
+                                    AnalysisDigestUpdate(message: "🔬 Scanning nutritional content..."),
+                                    AnalysisDigestUpdate(message: "📖 Reading ingredient list..."),
+                                    AnalysisDigestUpdate(message: "🧠 AI analyzing health impact..."),
+                                    AnalysisDigestUpdate(message: "⚕️ Checking medical compatibility..."),
+                                    AnalysisDigestUpdate(message: "📊 Calculating nutrition score..."),
+                                    AnalysisDigestUpdate(message: "🎯 Personalizing recommendations..."),
+                                    AnalysisDigestUpdate(message: "✨ Finalizing your report...")
+                                ],
+                                displayDuration: 2.5,
+                                rollingDuration: 0.5
+                            )
                         }
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(Color.backgroundWhite)
+                    .background(
+                        LinearGradient(
+                            gradient: Gradient(colors: [
+                                Color.backgroundWhite,
+                                Color.primaryGreen.opacity(0.02)
+                            ]),
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
                     
                 } else if !errorMessage.isEmpty {
                     // Compact Error State
@@ -87,6 +175,8 @@ struct AnalysisView: View {
                                     .foregroundColor(.textPrimary)
                                     .multilineTextAlignment(.center)
                                     .lineLimit(2)
+                                    .contentTransition(.numericText())
+                                    .animation(.bouncy(duration: 0.8), value: productName)
                             }
                             
                             VStack(spacing: 12) {
@@ -105,7 +195,7 @@ struct AnalysisView: View {
                                 color: .primaryGreen,
                                 isExpanded: expandedSections.contains("health"),
                                 summary: "",
-                                details: result.analysisPoints
+                                details: getHealthDetails(from: result.analysisPoints)
                             ) {
                                 toggleSection("health")
                             }
@@ -130,6 +220,20 @@ struct AnalysisView: View {
                                 details: result.ingredients ?? ["Ingredients information not available"]
                             ) {
                                 toggleSection("ingredients")
+                            }
+                            
+                            // Sources/Citations Section
+                            if !result.citations.isEmpty {
+                                ExpandableSection(
+                                    title: "Sources",
+                                    icon: "doc.text.fill",
+                                    color: .textSecondary,
+                                    isExpanded: expandedSections.contains("sources"),
+                                    summary: "",
+                                    details: result.citations
+                                ) {
+                                    toggleSection("sources")
+                                }
                             }
                         }
                         .padding(.horizontal, 20)
@@ -179,11 +283,22 @@ struct AnalysisView: View {
     
 
     
+    private func getHealthDetails(from points: [String]) -> [String] {
+        let healthKeywords = ["healthy", "unhealthy", "medical", "condition", "disease", "risk", "benefit", "avoid", "recommend", "suitable", "harmful"]
+        let filtered = points.filter { point in
+            healthKeywords.contains { point.lowercased().contains($0) }
+        }
+        // If no health-specific points found, show first half of all points
+        return filtered.isEmpty ? Array(points.prefix(points.count / 2 + 1)) : filtered
+    }
+    
     private func getNutrientDetails(from points: [String]) -> [String] {
-        let nutrientKeywords = ["protein", "sugar", "fat", "sodium", "fiber", "vitamin", "mineral", "calorie"]
-        return points.filter { point in
+        let nutrientKeywords = ["protein", "sugar", "fat", "sodium", "fiber", "vitamin", "mineral", "calorie", "carb", "nutrition", "energy", "kcal"]
+        let filtered = points.filter { point in
             nutrientKeywords.contains { point.lowercased().contains($0) }
         }
+        // If no nutrient-specific points found, show second half of all points
+        return filtered.isEmpty ? Array(points.suffix(points.count / 2)) : filtered
     }
     
 

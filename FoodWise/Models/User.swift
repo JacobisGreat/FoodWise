@@ -8,7 +8,7 @@
 import Foundation
 import FirebaseFirestore
 
-struct User: Codable, Identifiable {
+struct User: Codable, Identifiable, Equatable {
     var id: String?
     var name: String
     var email: String
@@ -16,12 +16,9 @@ struct User: Codable, Identifiable {
     var height: Double // in cm
     var weight: Double // in kg
     var medicalConditions: [String]
-    var customHealthConditions: [String] // Custom conditions added by user
-    var healthGoals: String // Personal health goals and notes
-    var additionalHealthConcerns: String // Free-form health concerns
     var createdAt: Date
     
-    init(id: String? = nil, name: String, email: String, age: Int, height: Double, weight: Double, medicalConditions: [String] = [], customHealthConditions: [String] = [], healthGoals: String = "", additionalHealthConcerns: String = "") {
+    init(id: String? = nil, name: String, email: String, age: Int, height: Double, weight: Double, medicalConditions: [String] = []) {
         self.id = id
         self.name = name
         self.email = email
@@ -29,9 +26,18 @@ struct User: Codable, Identifiable {
         self.height = height
         self.weight = weight
         self.medicalConditions = medicalConditions
-        self.customHealthConditions = customHealthConditions
-        self.healthGoals = healthGoals
-        self.additionalHealthConcerns = additionalHealthConcerns
         self.createdAt = Date()
+    }
+    
+    // Equatable conformance
+    static func == (lhs: User, rhs: User) -> Bool {
+        return lhs.id == rhs.id &&
+               lhs.name == rhs.name &&
+               lhs.email == rhs.email &&
+               lhs.age == rhs.age &&
+               lhs.height == rhs.height &&
+               lhs.weight == rhs.weight &&
+               lhs.medicalConditions == rhs.medicalConditions
+        // Note: Excluding createdAt from equality check as it might have slight differences
     }
 }

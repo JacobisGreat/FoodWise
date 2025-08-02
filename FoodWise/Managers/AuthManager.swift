@@ -49,39 +49,74 @@ class AuthManager: ObservableObject {
     }
     
     func signUp(email: String, password: String, name: String, age: Int, height: Double, weight: Double, medicalConditions: [String]) async throws {
-        let result = try await Auth.auth().createUser(withEmail: email, password: password)
+        print("📝 AuthManager: Attempting sign up for \(email)")
         
-        let userProfile = User(
-            id: result.user.uid,
-            name: name,
-            email: email,
-            age: age,
-            height: height,
-            weight: weight,
-            medicalConditions: medicalConditions
-        )
-        
-        // Convert to dictionary for Firestore
-        let userData: [String: Any] = [
-            "name": userProfile.name,
-            "email": userProfile.email,
-            "age": userProfile.age,
-            "height": userProfile.height,
-            "weight": userProfile.weight,
-            "medicalConditions": userProfile.medicalConditions,
-            "createdAt": userProfile.createdAt
-        ]
-        
-        try await db.collection("users").document(result.user.uid).setData(userData)
-        
-        DispatchQueue.main.async {
-            self.currentUserProfile = userProfile
-            self.isLoadingProfile = false
+        do {
+            let result = try await Auth.auth().createUser(withEmail: email, password: password)
+            print("✅ AuthManager: Firebase user created with UID: \(result.user.uid)")
+            
+            let userProfile = User(
+                id: result.user.uid,
+                name: name,
+                email: email,
+                age: age,
+                height: height,
+                weight: weight,
+                medicalConditions: medicalConditions
+            )
+            
+            // Convert to dictionary for Firestore
+            let userData: [String: Any] = [
+                "name": userProfile.name,
+                "email": userProfile.email,
+                "age": userProfile.age,
+                "height": userProfile.height,
+                "weight": userProfile.weight,
+                "medicalConditions": userProfile.medicalConditions,
+                "createdAt": userProfile.createdAt
+            ]
+            
+            try await db.collection("users").document(result.user.uid).setData(userData)
+            print("✅ AuthManager: User profile saved to Firestore")
+            
+            DispatchQueue.main.async {
+                self.currentUserProfile = userProfile
+                self.isLoadingProfile = false
+            }
+        } catch {
+            print("❌ AuthManager: Sign up failed - \(error.localizedDescription)")
+            throw error
         }
     }
     
+        // New method specifically for signup flow - creates auth account only, no profile
+    func signUpForOnboarding(email: String, password: String, name: String) async throws {
+        print("� Creating Firebase auth account for onboarding flow")
+        print("📧 Email: \(email)")
+        print("👤 Name: \(name)")
+        
+        let result = try await Auth.auth().createUser(withEmail: email, password: password)
+        print("✅ Firebase user created: \(result.user.uid)")
+        
+        // Set the display name
+        let changeRequest = result.user.createProfileChangeRequest()
+        changeRequest.displayName = name
+        try await changeRequest.commitChanges()
+        print("✅ Display name set to: \(name)")
+        
+        // DO NOT create Firestore profile here - let onboarding handle it
+        print("⏳ Account ready for onboarding...")
+    }
+    
     func signIn(email: String, password: String) async throws {
-        try await Auth.auth().signIn(withEmail: email, password: password)
+        print("🔐 AuthManager: Attempting sign in for \(email)")
+        do {
+            let result = try await Auth.auth().signIn(withEmail: email, password: password)
+            print("✅ AuthManager: Sign in successful for user \(result.user.uid)")
+        } catch {
+            print("❌ AuthManager: Sign in failed - \(error.localizedDescription)")
+            throw error
+        }
     }
     
     func signOut() throws {
@@ -110,8 +145,12 @@ class AuthManager: ObservableObject {
                 print("User needs to complete onboarding")
                 DispatchQueue.main.async {
                     // Profile doesn't exist - user needs to complete onboarding
-                    self?.currentUserProfile = nil
-                    self?.isLoadingProfile = false
+                    // Add a small delay to ensure smooth UI transition
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        self?.currentUserProfile = nil
+                        self?.isLoadingProfile = false
+                        print("✅ Ready to show onboarding")
+                    }
                 }
                 return
             }
@@ -140,7 +179,8 @@ class AuthManager: ObservableObject {
                 DispatchQueue.main.async {
                     self?.currentUserProfile = userProfile
                     self?.isLoadingProfile = false
-                    print("User profile loaded successfully: \(userProfile.name)")
+                    print("✅ User profile loaded successfully: \(userProfile.name)")
+                    print("🔄 Main app should now display")
                 }
             } catch {
                 print("Error decoding user profile: \(error)")
@@ -170,13 +210,19 @@ class AuthManager: ObservableObject {
         ]
         
         try await db.collection("users").document(userId).setData(userData, merge: true)
-        print("User profile saved successfully")
+        print("✅ User profile saved successfully")
         
         DispatchQueue.main.async {
             var userWithId = updatedUser
             userWithId.id = userId
-            self.currentUserProfile = userWithId
-            print("User profile updated in memory: \(userWithId.name)")
+            
+            // Add a small delay to ensure onboarding UI has time to show completion
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                self.currentUserProfile = userWithId
+                print("🎉 Profile set, navigating to main app")
+            }
+        }
+            //print("User profile updated in memory: \(userWithId.name)")
         }
     }
-}
+

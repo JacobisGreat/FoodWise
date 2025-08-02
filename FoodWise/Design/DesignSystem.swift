@@ -1,6 +1,13 @@
 //
 //  DesignSystem.swift
-//  FoodWise// MARK: - Typography (Friendly & Relaxing)
+//  FoodWise
+//
+//  Created by Aditya Makhija on 2025-08-02.
+//
+
+import SwiftUI
+
+// MARK: - Typography (Friendly & Relaxing)
 extension Font {
     // Friendly, rounded typography
     static let titleLarge = Font.system(size: 28, weight: .medium, design: .rounded)
@@ -18,10 +25,7 @@ extension Font {
     // Special friendly fonts for headers
     static let welcomeTitle = Font.system(size: 26, weight: .medium, design: .rounded)
     static let sectionHeader = Font.system(size: 20, weight: .medium, design: .rounded)
-}// ed by Aditya Makhija on 2025-08-02.
-//
-
-import SwiftUI
+}
 
 // MARK: - Color Scheme (FoodWise Professional Palette)
 extension Color {
