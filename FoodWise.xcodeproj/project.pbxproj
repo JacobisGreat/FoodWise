@@ -6,6 +6,12 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		48B263EC2E3E7A23004D67DB /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 48B263EB2E3E7A23004D67DB /* FirebaseAuth */; };
+		48B263EE2E3E7A23004D67DB /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 48B263ED2E3E7A23004D67DB /* FirebaseCore */; };
+		48B263F02E3E7A23004D67DB /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 48B263EF2E3E7A23004D67DB /* FirebaseFirestore */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		48B263A02E3E7732004D67DB /* FoodWise.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FoodWise.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -23,6 +29,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				48B263EE2E3E7A23004D67DB /* FirebaseCore in Frameworks */,
+				48B263EC2E3E7A23004D67DB /* FirebaseAuth in Frameworks */,
+				48B263F02E3E7A23004D67DB /* FirebaseFirestore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -65,6 +74,9 @@
 			);
 			name = FoodWise;
 			packageProductDependencies = (
+				48B263EB2E3E7A23004D67DB /* FirebaseAuth */,
+				48B263ED2E3E7A23004D67DB /* FirebaseCore */,
+				48B263EF2E3E7A23004D67DB /* FirebaseFirestore */,
 			);
 			productName = FoodWise;
 			productReference = 48B263A02E3E7732004D67DB /* FoodWise.app */;
@@ -94,6 +106,9 @@
 			);
 			mainGroup = 48B263972E3E7732004D67DB;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				48B263EA2E3E7A23004D67DB /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 48B263A12E3E7732004D67DB /* Products */;
 			projectDirPath = "";
@@ -256,6 +271,8 @@
 				DEVELOPMENT_TEAM = V3G64DVSQZ;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSCameraUsageDescription = "FoodWise needs access to your camera to scan food products and nutrition labels.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "FoodWise needs access to your photo library to analyze saved images.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -284,6 +301,8 @@
 				DEVELOPMENT_TEAM = V3G64DVSQZ;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSCameraUsageDescription = "FoodWise needs access to your camera to scan food products and nutrition labels.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "FoodWise needs access to your photo library to analyze saved images.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -324,6 +343,35 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		48B263EA2E3E7A23004D67DB /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 12.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		48B263EB2E3E7A23004D67DB /* FirebaseAuth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 48B263EA2E3E7A23004D67DB /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAuth;
+		};
+		48B263ED2E3E7A23004D67DB /* FirebaseCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 48B263EA2E3E7A23004D67DB /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseCore;
+		};
+		48B263EF2E3E7A23004D67DB /* FirebaseFirestore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 48B263EA2E3E7A23004D67DB /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseFirestore;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 48B263982E3E7732004D67DB /* Project object */;
 }
