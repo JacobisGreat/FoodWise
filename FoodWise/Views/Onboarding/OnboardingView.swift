@@ -14,6 +14,7 @@ struct OnboardingView: View {
     @State private var height = ""
     @State private var weight = ""
     @State private var selectedConditions: Set<String> = []
+    @State private var customCondition = ""
     @State private var isLoading = false
     @State private var showingSignOutAlert = false
     
@@ -79,6 +80,37 @@ struct OnboardingView: View {
                             }
                         }
                         .padding(.horizontal)
+                        
+                        // Custom condition input
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Or add a custom condition/notes:")
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                                .padding(.horizontal)
+                            
+                            HStack {
+                                TextField("e.g., Gluten sensitivity, Low sodium diet", text: $customCondition)
+                                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                                
+                                Button("Add") {
+                                    if !customCondition.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                                        selectedConditions.remove("None")
+                                        selectedConditions.insert(customCondition.trimmingCharacters(in: .whitespacesAndNewlines))
+                                        customCondition = ""
+                                    }
+                                }
+                                .disabled(customCondition.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 8)
+                                .background(
+                                    customCondition.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?
+                                    Color.gray.opacity(0.3) : Color(hex: "#4CAF50")
+                                )
+                                .foregroundColor(.white)
+                                .cornerRadius(8)
+                            }
+                            .padding(.horizontal)
+                        }
                         
                         Spacer()
                     }

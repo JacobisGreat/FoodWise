@@ -11,6 +11,7 @@ import FirebaseCore
 @main
 struct FoodWiseApp: App {
     @StateObject private var authManager = AuthManager()
+    @State private var showingSplash = true
     
     init() {
         FirebaseApp.configure()
@@ -20,7 +21,17 @@ struct FoodWiseApp: App {
     var body: some Scene {
         WindowGroup {
             Group {
-                if authManager.isAuthenticated {
+                if showingSplash {
+                    SplashView()
+                        .onAppear {
+                            // Hide splash screen after 2.5 seconds
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+                                withAnimation(.easeInOut(duration: 0.5)) {
+                                    showingSplash = false
+                                }
+                            }
+                        }
+                } else if authManager.isAuthenticated {
                     if authManager.isLoadingProfile {
                         // Show custom loading screen while profile loads
                         LoadingView()

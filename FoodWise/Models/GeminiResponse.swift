@@ -30,4 +30,6 @@ struct GeminiAnalysisResult: Codable {
     let productName: String?
     let confidence: Double?
     let ingredients: [String]?
+    let topNutrients: [String]?
+    let worstIngredients: [String]?
 }

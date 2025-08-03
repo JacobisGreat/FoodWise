@@ -9,39 +9,29 @@ import SwiftUI
 
 struct AppColors {
     // Primary Colors
-    static let primaryGreen = Color(hex: "#4CAF50")
-    static let primaryGreenLight = Color(hex: "#66BB6A")
-    static let secondaryTeal = Color(hex: "#26A69A")
-    static let accentTeal = Color(hex: "#26A69A")
+    static let primaryGreen = Color(hex: "#4CAF50")       // Health, vitality, action
+    static let accentTeal = Color(hex: "#26A69A")         // Freshness, trust, calm
+    static let secondaryTeal = Color(hex: "#26A69A")      // Alias for accentTeal
     
-    // Backgrounds
-    static let backgroundWhite = Color(hex: "#FFFFFF")
-    static let offWhitePanels = Color(hex: "#FAFAFA")
-    static let panelOffWhite = Color(hex: "#FAFAFA")
-    static let cardBackground = Color(hex: "#FFFFFF")
+    // Background Colors
+    static let backgroundWhite = Color(hex: "#FFFFFF")    // App background
+    static let panelOffWhite = Color(hex: "#FAFAFA")      // Cards, light containers
+    static let surfaceSecondary = Color(hex: "#F5F5F5")   // Secondary surfaces
     
     // Text Colors
-    static let darkGrayText = Color(hex: "#212121")
-    static let mediumGrayText = Color(hex: "#757575")
-    static let textPrimary = Color(hex: "#212121")
-    static let textSecondary = Color(hex: "#757575")
-    static let textTertiary = Color(hex: "#9E9E9E")
+    static let textPrimary = Color(hex: "#212121")        // Primary text
+    static let textSecondary = Color(hex: "#757575")      // Secondary text, placeholders
+    static let textTertiary = Color(hex: "#9E9E9E")       // Tertiary text
+    
+    // Structural Colors
+    static let dividerGray = Color(hex: "#E0E0E0")        // Borders, dividers
     
     // Status Colors
-    static let warningAmber = Color(hex: "#FFC107")
-    static let warning = Color(hex: "#FFC107")
-    static let dangerRed = Color(hex: "#E53935")
-    static let error = Color(hex: "#E53935")
-    static let successGreen = Color(hex: "#66BB6A")
-    static let infoBlue = Color(hex: "#2196F3")
+    static let warning = Color(hex: "#FFC107")            // NutriScore C, gentle warnings
+    static let error = Color(hex: "#E53935")              // NutriScore D/E, danger text
+    static let infoBlue = Color(hex: "#42A5F5")           // Tips, optional actions
     
-    // UI Elements
-    static let dividerGray = Color(hex: "#E0E0E0")
-    
-    // NutriScore Colors
-    static let nutriScoreA = primaryGreen
-    static let nutriScoreB = Color(hex: "#8BC34A")
-    static let nutriScoreC = warningAmber
-    static let nutriScoreD = Color(hex: "#FF7043")
-    static let nutriScoreE = dangerRed
+    // Convenience aliases for semantic usage
+    static let success = primaryGreen
+    static let info = infoBlue
 }

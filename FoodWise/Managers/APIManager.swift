@@ -118,21 +118,25 @@ class APIManager: ObservableObject {
         - Write in plain text only
         - Use simple, clear language without special formatting
         - Avoid bold, italic, or any markdown syntax
+        - ALWAYS use "your" when referring to the user's conditions, never "my" 
+        - Address the user as "you" throughout the analysis
         
         Please analyze this product comprehensively and provide:
         1. A NutriScore (A, B, C, D, or E) - A being the healthiest, considering BOTH nutrition AND ingredients
-        2. 3-5 bullet points explaining why this product is suitable or unsuitable for you (mention specific ingredients/nutrients that concern or benefit you)
+        2. 3-5 bullet points explaining why this product is suitable or unsuitable for the user (mention specific ingredients/nutrients that concern or benefit them, use "your" conditions)
         3. 2-3 citations from reputable health sources
         4. A list of ingredients with simple English explanations of what each ingredient is and its purpose/effect
+        5. Top 3 most beneficial nutrients with SHORT descriptions (1 sentence each)
+        6. Bottom 3 worst ingredients with SHORT warnings (1 sentence each)
         
         Return your response in this exact JSON format:
         {
             "nutriScore": "C",
             "analysisPoints": [
-                "Point about specific ingredients or nutrients relevant to you",
-                "Point about how this suits your medical conditions", 
-                "Point about processing level and what it means for your health",
-                "Point about portion recommendations for you"
+                "Point about specific ingredients or nutrients relevant to the user's conditions",
+                "Point about how this suits the user's medical conditions using YOUR not MY", 
+                "Point about processing level and what it means for the user's health",
+                "Point about portion recommendations for the user"
             ],
             "citations": [
                 "American Heart Association guidelines on sodium intake",
@@ -144,6 +148,16 @@ class APIManager: ObservableObject {
                 "Water - The base liquid for hydration",
                 "Sugar - Provides quick energy but can cause blood sugar spikes",
                 "Citric Acid - Natural preservative and flavor enhancer"
+            ],
+            "topNutrients": [
+                "Protein 15g - Helps build and repair muscles",
+                "Fiber 8g - Supports digestive health and satiety",
+                "Vitamin C 45mg - Boosts immune system function"
+            ],
+            "worstIngredients": [
+                "High Fructose Corn Syrup - Linked to obesity and diabetes",
+                "Sodium Benzoate - May cause hyperactivity in children",
+                "Trans Fats - Increases bad cholesterol levels"
             ]
         }
         
@@ -184,25 +198,29 @@ class APIManager: ObservableObject {
         - Write in plain text only
         - Use simple, clear language without special formatting
         - Avoid bold, italic, or any markdown syntax
+        - ALWAYS use "your" when referring to the user's conditions, never "my"
+        - Address the user as "you" throughout the analysis
         
         Please analyze this product image comprehensively and provide:
         1. A NutriScore (A, B, C, D, or E) - A being the healthiest, considering BOTH nutrition AND ingredients quality
         2. 3-5 bullet points explaining:
-           - Specific nutritional concerns or benefits for you
-           - Ingredient quality assessment (mention concerning additives/preservatives that affect you)
-           - How this suits your medical conditions
-           - Processing level and health recommendations for you
+           - Specific nutritional concerns or benefits for the user
+           - Ingredient quality assessment (mention concerning additives/preservatives that affect the user)
+           - How this suits the user's medical conditions
+           - Processing level and health recommendations for the user
         3. 2-3 citations from reputable health sources
         4. A list of ingredients with simple English explanations of what each ingredient is and its purpose/effect (extract from the product image)
+        5. Top 3 most beneficial nutrients with SHORT descriptions (1 sentence each)
+        6. Bottom 3 worst ingredients with SHORT warnings (1 sentence each)
         
         Return your response in this exact JSON format:
         {
             "nutriScore": "C",
             "analysisPoints": [
-                "Nutritional analysis based on facts panel and how it affects you",
-                "Ingredient quality assessment with specific concerns for your health",
-                "How this product suits your medical conditions", 
-                "Processing level and health recommendations tailored to you"
+                "Nutritional analysis based on facts panel and how it affects the user",
+                "Ingredient quality assessment with specific concerns for the user's health",
+                "How this product suits the user's medical conditions using YOUR not MY", 
+                "Processing level and health recommendations tailored to the user"
             ],
             "citations": [
                 "Relevant health authority guideline",
@@ -214,6 +232,16 @@ class APIManager: ObservableObject {
                 "Water - The base liquid for hydration",
                 "Sugar - Provides quick energy but can cause blood sugar spikes",
                 "Citric Acid - Natural preservative and flavor enhancer"
+            ],
+            "topNutrients": [
+                "Protein 15g - Helps build and repair muscles",
+                "Fiber 8g - Supports digestive health and satiety",
+                "Vitamin C 45mg - Boosts immune system function"
+            ],
+            "worstIngredients": [
+                "High Fructose Corn Syrup - Linked to obesity and diabetes",
+                "Sodium Benzoate - May cause hyperactivity in children",
+                "Trans Fats - Increases bad cholesterol levels"
             ]
         }
         
@@ -391,6 +419,16 @@ class APIManager: ObservableObject {
             cleanMarkdownFromText(ingredient)
         }
         
+        // Clean top nutrients
+        let cleanedTopNutrients = result.topNutrients?.map { nutrient in
+            cleanMarkdownFromText(nutrient)
+        }
+        
+        // Clean worst ingredients
+        let cleanedWorstIngredients = result.worstIngredients?.map { ingredient in
+            cleanMarkdownFromText(ingredient)
+        }
+        
         // Clean product name
         let cleanedProductName = result.productName.map { cleanMarkdownFromText($0) }
         
@@ -400,7 +438,9 @@ class APIManager: ObservableObject {
             citations: cleanedCitations,
             productName: cleanedProductName,
             confidence: result.confidence,
-            ingredients: cleanedIngredients
+            ingredients: cleanedIngredients,
+            topNutrients: cleanedTopNutrients,
+            worstIngredients: cleanedWorstIngredients
         )
     }
     
@@ -416,6 +456,18 @@ class APIManager: ObservableObject {
             .replacingOccurrences(of: "`", with: "")
             // Remove strikethrough
             .replacingOccurrences(of: "~~", with: "")
+            // Fix pronoun issues - replace "my" with "your" in health contexts
+            .replacingOccurrences(of: "due to my ", with: "due to your ", options: .caseInsensitive)
+            .replacingOccurrences(of: "because of my ", with: "because of your ", options: .caseInsensitive)
+            .replacingOccurrences(of: "given my ", with: "given your ", options: .caseInsensitive)
+            .replacingOccurrences(of: "with my ", with: "with your ", options: .caseInsensitive)
+            .replacingOccurrences(of: " my celiac", with: " your celiac", options: .caseInsensitive)
+            .replacingOccurrences(of: " my diabetes", with: " your diabetes", options: .caseInsensitive)
+            .replacingOccurrences(of: " my condition", with: " your condition", options: .caseInsensitive)
+            .replacingOccurrences(of: " my conditions", with: " your conditions", options: .caseInsensitive)
+            .replacingOccurrences(of: " my health", with: " your health", options: .caseInsensitive)
+            .replacingOccurrences(of: " my diet", with: " your diet", options: .caseInsensitive)
+            .replacingOccurrences(of: " my age", with: " your age", options: .caseInsensitive)
             // Clean up any double spaces that might result
             .replacingOccurrences(of: "  ", with: " ")
             .trimmingCharacters(in: .whitespacesAndNewlines)

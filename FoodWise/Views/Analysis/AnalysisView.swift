@@ -96,13 +96,6 @@ struct AnalysisView: View {
                         }
                         
                         VStack(spacing: 40) {
-                            // Enhanced loading animation
-                            ZStack {
-                                PulsingCircleLoadingView(color: .primaryGreen, size: 60)
-                                LoadingDotsView(color: .primaryGreen, size: 8)
-                                    .offset(y: 35)
-                            }
-                            
                             AnalysisRollingUpdates(
                                 updates: [
                                     AnalysisDigestUpdate(message: "🔬 Scanning nutritional content..."),
@@ -182,8 +175,17 @@ struct AnalysisView: View {
                             VStack(spacing: 12) {
                                 NutriScoreBadge(score: result.nutriScore, size: .medium)
                                 
-                                // Add NutriScore pills visualization
-                                NutriScorePills(score: result.nutriScore, style: .expanded)
+                                // Score explanation
+                                VStack(spacing: 4) {
+                                    Text("NutriScore \(result.nutriScore.uppercased())")
+                                        .font(.system(size: 14, weight: .semibold, design: .rounded))
+                                        .foregroundColor(AppColors.textPrimary)
+                                    
+                                    Text(scoreDescription(for: result.nutriScore))
+                                        .font(.system(size: 12, weight: .medium, design: .rounded))
+                                        .foregroundColor(AppColors.textSecondary)
+                                        .multilineTextAlignment(.center)
+                                }
                             }
                         }
                         
@@ -220,6 +222,34 @@ struct AnalysisView: View {
                                 details: result.ingredients ?? ["Ingredients information not available"]
                             ) {
                                 toggleSection("ingredients")
+                            }
+                            
+                            // Top Nutrients Section
+                            if let topNutrients = result.topNutrients, !topNutrients.isEmpty {
+                                ExpandableSection(
+                                    title: "Top 3 Nutrients",
+                                    icon: "star.fill",
+                                    color: .primaryGreen,
+                                    isExpanded: expandedSections.contains("topNutrients"),
+                                    summary: "",
+                                    details: topNutrients
+                                ) {
+                                    toggleSection("topNutrients")
+                                }
+                            }
+                            
+                            // Worst Ingredients Section
+                            if let worstIngredients = result.worstIngredients, !worstIngredients.isEmpty {
+                                ExpandableSection(
+                                    title: "Ingredients to Watch",
+                                    icon: "exclamationmark.triangle.fill",
+                                    color: .warning,
+                                    isExpanded: expandedSections.contains("worstIngredients"),
+                                    summary: "",
+                                    details: worstIngredients
+                                ) {
+                                    toggleSection("worstIngredients")
+                                }
                             }
                             
                             // Sources/Citations Section
@@ -281,6 +311,22 @@ struct AnalysisView: View {
         }
     }
     
+    private func scoreDescription(for score: String) -> String {
+        switch score.uppercased() {
+        case "A":
+            return "Excellent nutritional quality"
+        case "B":
+            return "Good nutritional quality"
+        case "C":
+            return "Fair nutritional quality"
+        case "D":
+            return "Poor nutritional quality"
+        case "E":
+            return "Very poor nutritional quality"
+        default:
+            return "Nutritional quality unknown"
+        }
+    }
 
     
     private func getHealthDetails(from points: [String]) -> [String] {

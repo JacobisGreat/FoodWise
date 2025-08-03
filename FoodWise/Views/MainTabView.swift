@@ -16,6 +16,7 @@ struct MainTabView: View {
     @StateObject private var scanHistoryManager = ScanHistoryManager()
     @StateObject private var tabNavigationManager = TabNavigationManager()
     @Namespace private var animationNamespace
+    @State private var previousTab = 0
     
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -28,23 +29,23 @@ struct MainTabView: View {
                         .environmentObject(scanHistoryManager)
                         .environmentObject(tabNavigationManager)
                         .transition(.asymmetric(
-                            insertion: .move(edge: .trailing).combined(with: .opacity),
-                            removal: .move(edge: .leading).combined(with: .opacity)
+                            insertion: .move(edge: previousTab > 0 ? .leading : .trailing).combined(with: .opacity),
+                            removal: .move(edge: previousTab > 0 ? .trailing : .leading).combined(with: .opacity)
                         ))
                 case 1:
                     HistoryView()
                         .environmentObject(authManager)
                         .environmentObject(scanHistoryManager)
                         .transition(.asymmetric(
-                            insertion: .move(edge: tabNavigationManager.selectedTab > 1 ? .leading : .trailing).combined(with: .opacity),
-                            removal: .move(edge: tabNavigationManager.selectedTab > 1 ? .trailing : .leading).combined(with: .opacity)
+                            insertion: .move(edge: previousTab > 1 ? .leading : .trailing).combined(with: .opacity),
+                            removal: .move(edge: previousTab > 1 ? .trailing : .leading).combined(with: .opacity)
                         ))
                 case 2:
                     ProfileView()
                         .environmentObject(authManager)
                         .transition(.asymmetric(
-                            insertion: .move(edge: .leading).combined(with: .opacity),
-                            removal: .move(edge: .trailing).combined(with: .opacity)
+                            insertion: .move(edge: previousTab > 2 ? .leading : .trailing).combined(with: .opacity),
+                            removal: .move(edge: previousTab > 2 ? .trailing : .leading).combined(with: .opacity)
                         ))
                 default:
                     HomeView()
@@ -54,6 +55,27 @@ struct MainTabView: View {
                 }
             }
             .animation(.spring(response: 0.5, dampingFraction: 0.8), value: tabNavigationManager.selectedTab)
+            .gesture(
+                DragGesture()
+                    .onEnded { (gesture: DragGesture.Value) in
+                        let threshold: CGFloat = 50
+                        let horizontalMovement: CGFloat = gesture.translation.width
+                        
+                        if horizontalMovement > threshold && tabNavigationManager.selectedTab > 0 {
+                            // Swipe right - go to previous tab
+                            withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                                previousTab = tabNavigationManager.selectedTab
+                                tabNavigationManager.selectedTab -= 1
+                            }
+                        } else if horizontalMovement < -threshold && tabNavigationManager.selectedTab < 2 {
+                            // Swipe left - go to next tab
+                            withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                                previousTab = tabNavigationManager.selectedTab
+                                tabNavigationManager.selectedTab += 1
+                            }
+                        }
+                    }
+            )
             
             // Custom Tab Bar
             ModernTabBar(selectedTab: $tabNavigationManager.selectedTab, animationNamespace: animationNamespace)
@@ -64,6 +86,9 @@ struct MainTabView: View {
             if let userId = authManager.user?.uid {
                 scanHistoryManager.loadScanHistory(for: userId)
             }
+        }
+        .onChange(of: tabNavigationManager.selectedTab) { oldValue, newValue in
+            previousTab = oldValue
         }
     }
 }
@@ -126,11 +151,6 @@ struct TabBarButton: View {
                             .fill(AppColors.primaryGreen)
                             .frame(width: 40, height: 40)
                             .matchedGeometryEffect(id: "selectedTab", in: animationNamespace)
-                        
-                        Rectangle()
-                            .fill(AppColors.primaryGreen)
-                            .frame(width: 60, height: 3)
-                            .offset(y: -20)
                     }
                     
                     Image(systemName: isSelected ? activeIcon : icon)
