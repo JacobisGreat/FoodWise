@@ -1,6 +1,6 @@
 # 🍏 FoodWise – Smart Nutrition Scanner for iOS  
 
-### *Discover what's in your food*  
+### *Discover what's in your food.*  
 
 ---
 
