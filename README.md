@@ -14,7 +14,9 @@
 
 ## 📖 Overview
 
-**FoodWise** empowers users, especially those with chronic health conditions, to make healthier food decisions. Simply scan a product's barcode or nutrition label, and the app will analyze it using **Open Food Facts** and **Google Gemini AI**. Users receive a **personalized NutriScore**, detailed bullet points on safety, and small citations from reputable health sources.
+**FoodWise** empowers users, especially those with chronic health conditions, to make healthier food decisions. Simply scan a product's barcode or nutrition label, and the app will analyze it using **Open Food Facts** and **Google Gemini AI**. Users receive a **personalized NutriScore**, detailed bullet points on safety, and small citations from reputable health sources.  
+
+Additionally, FoodWise features an **AI Nutrition Chatbot** where users can ask anything about health, nutrition, diet planning, or food safety, receiving instant, AI-powered guidance.
 
 ---
 
@@ -25,6 +27,7 @@
 - 📊 **Personalized NutriScore** based on age, height, weight, and medical conditions  
 - 📸 **Barcode scanning** (local) and **label scanning** (cloud OCR)  
 - ☁️ **Cloud AI Analysis** with Gemini for suitability evaluation  
+- 🤖 **AI Nutrition Chatbot** to answer user questions about health, diet, and nutrition  
 - 🧾 **Detailed bullet points** explaining why food is safe or risky  
 - 📚 **Cited medical references** for credibility  
 - 🕒 **Scan History** to review previous results  
@@ -39,7 +42,7 @@
 - **Backend:** Firebase (Auth, Firestore, Storage, Cloud Functions)  
 - **Barcode Scanner:** AVFoundation or VisionKit  
 - **Nutrition Data:** [Open Food Facts API](https://world.openfoodfacts.org/data)  
-- **AI Engine:** Google Gemini (OCR and Nutrition Analysis)  
+- **AI Engine:** Google Gemini (OCR, Nutrition Analysis, and Chatbot)  
 - **Package Manager:** Swift Package Manager (SPM)  
 
 ---
@@ -47,7 +50,7 @@
 ## 🧠 Architecture
 
 - **Pattern:** MVVM ensuring separation of concerns and testability  
-- **SwiftUI Components:** Reusable UI elements for buttons, NutriScore badge, and input fields  
+- **SwiftUI Components:** Reusable UI elements for buttons, NutriScore badge, input fields, and chatbot interface  
 - **Services Layer:** Handles API communication with Open Food Facts and Gemini AI  
 - **Firebase Integration:**  
   - Authentication for user profiles  
@@ -55,6 +58,7 @@
   - Cloud Functions for secure backend logic  
 - **Local Barcode Scanning:** Uses on-device frameworks for speed and privacy  
 - **Cloud OCR:** Performed by Gemini when barcode data is not available  
+- **AI Chatbot:** Uses Gemini for conversational Q&A about nutrition and health  
 
 ---
 
@@ -65,6 +69,9 @@
 
 ### For non-barcode scans:
 `User takes product image → Image uploaded to backend → Gemini performs OCR to extract nutrition facts and ingredients → Data analyzed with user profile → NutriScore and bullet point analysis generated → Result displayed to user → Saved in Firestore for history`
+
+### For AI Nutrition Chatbot:
+`User opens chatbot → Asks health or nutrition question → Gemini processes query → AI chatbot returns instant, medically-referenced guidance`
 
 ---
 
