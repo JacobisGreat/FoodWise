@@ -1,6 +1,14 @@
-# 🍏 FoodWise – Smart Nutrition Scanner for iOS
+# 🍏 FoodWise – Smart Nutrition Scanner for iOS  
 
-*A healthcare-focused iOS app built in Swift that helps users make informed food choices through barcode scanning and AI-driven analysis.*
+### *Discover what's in your food*  
+
+---
+
+![Swift](https://img.shields.io/badge/Swift-5.9-orange?style=for-the-badge&logo=swift)  
+![iOS](https://img.shields.io/badge/iOS-16%2B-lightgrey?style=for-the-badge&logo=apple)  
+![Firebase](https://img.shields.io/badge/Firebase-Authentication%2C%20Firestore%2C%20Storage-ffca28?style=for-the-badge&logo=firebase)  
+![Gemini AI](https://img.shields.io/badge/Google%20Gemini-AI%20Analysis-blue?style=for-the-badge&logo=google)  
+![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)  
 
 ---
 
